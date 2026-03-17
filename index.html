@@ -263,6 +263,32 @@
       filter: invert(0.7);
       cursor: pointer;
     }
+
+    .cp-row input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 90px;
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.15);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .cp-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #ffb84d;
+      cursor: pointer;
+    }
+
+    .cp-slider-label {
+      font-size: 11px;
+      color: #4a5878;
+    }
   </style>
 </head>
 <body>
@@ -287,6 +313,12 @@
   <label class="cp-row">
     <span>Interplanetary Saturday was on</span>
     <input type="date" id="epoch-date" value="2000-01-01">
+  </label>
+  <label class="cp-row">
+    <span>Planets move</span>
+    <span class="cp-slider-label">slowly</span>
+    <input type="range" id="speed-slider" min="1" max="10" value="5" step="1">
+    <span class="cp-slider-label">quickly</span>
   </label>
 </div>
 
@@ -348,9 +380,10 @@ const PLANETS = [
 ];
 
 // ── Orbital speed scale ──────────────────────────────────────────────────────
-// Mercury completes one visual orbit in 30 seconds
+// Mercury completes one visual orbit in 30 seconds at default speed (multiplier = 1)
 const MERCURY_MS        = 30_000;
 const MS_PER_ORBD       = MERCURY_MS / PLANETS[0].orbitalDays;
+let   speedMultiplier   = 5;     // controlled by #speed-slider
 
 // ── Taco Tuesday logic (ported from Rust) ────────────────────────────────────
 function computeTaco(planet, nowSecs) {
@@ -477,15 +510,18 @@ const planetNodes = PLANETS.map((p, i) => {
 });
 
 // ── Animation loop ────────────────────────────────────────────────────────────
-const t0 = performance.now();
+let virtualElapsed = 0;
+let lastFrameTime  = performance.now();
 
 function frame(now) {
-  const elapsed = now - t0;
-  const nowSecs = Date.now() / 1000;
+  const dt = now - lastFrameTime;
+  lastFrameTime    = now;
+  virtualElapsed  += dt * speedMultiplier;
+  const nowSecs    = Date.now() / 1000;
 
   planetNodes.forEach(({ anchor, planet, taco, initialAngle, p }) => {
     const periodMs = p.orbitalDays * MS_PER_ORBD;
-    const angle    = initialAngle + (elapsed / periodMs) * Math.PI * 2;
+    const angle    = initialAngle + (virtualElapsed / periodMs) * Math.PI * 2;
     const x        = Math.cos(angle) * p.orbitR;
     const y        = Math.sin(angle) * p.orbitR;
 
@@ -563,6 +599,10 @@ document.getElementById('pluto-planet').addEventListener('change', function () {
   const show = this.checked;
   planetNodes[PLUTO_IDX].anchor.style.display = show ? '' : 'none';
   orbitRings[PLUTO_IDX].style.display         = show ? '' : 'none';
+});
+
+document.getElementById('speed-slider').addEventListener('input', function () {
+  speedMultiplier = parseInt(this.value);  // 1–7 maps directly to 1x–7x
 });
 
 document.getElementById('epoch-date').addEventListener('change', function () {
