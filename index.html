@@ -71,6 +71,18 @@
       z-index: 10;
     }
 
+    #sun-taco {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      line-height: 1;
+      z-index: 11;
+      pointer-events: none;
+      filter: drop-shadow(0 0 8px rgba(255, 210, 0, 0.9));
+    }
+
     /* Zero-size anchor positioned at the planet's orbital location */
     .planet-anchor {
       position: absolute;
@@ -298,6 +310,7 @@
 
 <div id="solar-system">
   <div id="sun"></div>
+  <div id="sun-taco">🌮</div>
 </div>
 
 <div id="tooltip">
@@ -330,51 +343,53 @@ const EARTH_DAY_S   = 86400.0;
 const TUESDAY       = 3;
 const DAY_NAMES     = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
 
+const PLANET_SIZE_SCALE = 2.5;
+
 // ── Planet data ──────────────────────────────────────────────────────────────
 const PLANETS = [
   {
     name: 'Mercury', solarDayHours: 4222.6, useSol: false,
-    orbitalDays: 87.97, orbitR: 72, size: 6,
+    orbitalDays: 87.97, orbitR: 72, size: 18 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #d8d8d8, #9a9a9a 55%, #5a5a5a)',
   },
   {
     name: 'Venus', solarDayHours: 2802.0, useSol: false,
-    orbitalDays: 224.70, orbitR: 110, size: 10,
+    orbitalDays: 224.70, orbitR: 110, size: 10 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #f5e6c8, #d4a84b 50%, #8a681e)',
   },
   {
     name: 'Earth', solarDayHours: 24.0, useSol: false,
-    orbitalDays: 365.25, orbitR: 150, size: 10,
+    orbitalDays: 365.25, orbitR: 150, size: 10 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #b8e0f7, #3a8cc1 50%, #1a4f7a)',
   },
   {
     name: 'Mars', solarDayHours: 24.6598, useSol: true,
-    orbitalDays: 686.97, orbitR: 192, size: 8,
+    orbitalDays: 686.97, orbitR: 192, size: 8 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #e8836a, #bf4517 50%, #7a2b0c)',
   },
   {
     name: 'Jupiter', solarDayHours: 9.9250, useSol: false,
-    orbitalDays: 4332.59, orbitR: 248, size: 22,
+    orbitalDays: 4332.59, orbitR: 248, size: 22 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #e8d0a8, #c8923c 45%, #8a601e)',
   },
   {
     name: 'Saturn', solarDayHours: 10.6562, useSol: false,
-    orbitalDays: 10759.22, orbitR: 305, size: 18, hasRing: true,
+    orbitalDays: 10759.22, orbitR: 305, size: 18 * PLANET_SIZE_SCALE, hasRing: true,
     bg: 'radial-gradient(circle at 35% 30%, #f2e8b8, #e0cc88 50%, #b09840)',
   },
   {
     name: 'Uranus', solarDayHours: 17.2400, useSol: false,
-    orbitalDays: 30688.5, orbitR: 358, size: 14,
+    orbitalDays: 30688.5, orbitR: 358, size: 14 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #d8f4fa, #7ecae0 50%, #3a8caa)',
   },
   {
     name: 'Neptune', solarDayHours: 16.1100, useSol: false,
-    orbitalDays: 60182.0, orbitR: 404, size: 13,
+    orbitalDays: 60182.0, orbitR: 404, size: 13 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #8898e8, #3050c8 50%, #182080)',
   },
   {
     name: 'Pluto', solarDayHours: 153.3, useSol: false,
-    orbitalDays: 90560.0, orbitR: 444, size: 5,
+    orbitalDays: 90560.0, orbitR: 444, size: 5 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #dfc8a8, #c0a070 50%, #806040)',
   },
 ];
