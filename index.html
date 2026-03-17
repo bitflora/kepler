@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taco Tuesday in Space</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #020817;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    #title {
+      position: fixed;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.45);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 7px;
+      text-transform: uppercase;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #solar-system {
+      position: relative;
+      width: 920px;
+      height: 920px;
+      flex-shrink: 0;
+    }
+
+    .orbit-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.055);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    #sun {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 35%, #fffde4, #ffd700 30%, #ff8c00 62%, #ff4500 90%);
+      box-shadow:
+        0 0 18px 7px rgba(255, 210, 0, 0.85),
+        0 0 55px 22px rgba(255, 140, 0, 0.42),
+        0 0 110px 45px rgba(255, 70, 0, 0.18);
+      z-index: 10;
+    }
+
+    /* Zero-size anchor positioned at the planet's orbital location */
+    .planet-anchor {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      pointer-events: none;
+    }
+
+    /* Saturn's ring — rendered first so it sits behind the sphere */
+    .saturn-ring {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: 50%;
+      border: 3px solid rgba(195, 175, 95, 0.5);
+      outline: 1px solid rgba(195, 175, 95, 0.15);
+      transform: translate(-50%, -50%) scaleY(0.26);
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .planet {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      pointer-events: all;
+      z-index: 5;
+      transition: filter 0.2s, box-shadow 0.3s;
+    }
+
+    /* Expanded invisible hit area for tiny planets */
+    .planet::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: max(100%, 26px);
+      height: max(100%, 26px);
+      border-radius: 50%;
+    }
+
+    .planet:hover {
+      filter: brightness(1.4) drop-shadow(0 0 7px rgba(255, 255, 255, 0.55));
+    }
+
+    .taco {
+      position: absolute;
+      top: 0;
+      left: 0;
+      font-size: 14px;
+      line-height: 1;
+      pointer-events: none;
+      z-index: 6;
+      display: none;
+      filter: drop-shadow(0 0 6px rgba(255, 210, 0, 0.95));
+      animation: tacoFloat 2s ease-in-out infinite;
+    }
+
+    @keyframes tacoFloat {
+      0%, 100% { transform: translate(-50%, calc(-100% - 18px)); }
+      50%       { transform: translate(-50%, calc(-100% - 26px)) scale(1.1); }
+    }
+
+    /* ── Tooltip ──────────────────────────────────────────────────────────── */
+    #tooltip {
+      position: fixed;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.13s ease;
+      max-width: 250px;
+    }
+
+    #tooltip.show { opacity: 1; }
+
+    .tt-inner {
+      background: rgba(6, 11, 26, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 13px;
+      padding: 15px 19px;
+      color: #bccde8;
+      font-size: 13px;
+      line-height: 1.65;
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+    }
+
+    .tt-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .tt-day {
+      font-size: 11px;
+      color: #4a5878;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 11px;
+    }
+
+    .tt-taco-banner {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffb84d;
+      margin-bottom: 3px;
+    }
+
+    .tt-label {
+      font-size: 11px;
+      color: #6a7a9a;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+
+    .tt-value {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e4eeff;
+    }
+
+    .tt-earth {
+      font-size: 11px;
+      color: #404d68;
+      margin-top: 1px;
+    }
+
+    /* ── Control Panel ────────────────────────────────────────────────────── */
+    #control-panel {
+      position: fixed;
+      bottom: 22px;
+      left: 22px;
+      z-index: 900;
+      background: rgba(6, 11, 26, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 13px;
+      padding: 15px 19px;
+      color: #bccde8;
+      font-size: 13px;
+      line-height: 1.65;
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .cp-title {
+      font-size: 11px;
+      color: #4a5878;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .cp-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: #bccde8;
+      font-size: 13px;
+    }
+
+    .cp-row input[type="checkbox"] {
+      accent-color: #ffb84d;
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+
+    .cp-row input[type="date"] {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: #e4eeff;
+      font-size: 12px;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .cp-row input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.7);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<div id="title">Taco Tuesday in Space</div>
+
+<div id="solar-system">
+  <div id="sun"></div>
+</div>
+
+<div id="tooltip">
+  <div class="tt-inner" id="tt-inner"></div>
+</div>
+
+<div id="control-panel">
+  <div class="cp-title">In this house we believe:</div>
+  <label class="cp-row">
+    <input type="checkbox" id="pluto-planet" checked>
+    <span>Pluto is a planet</span>
+  </label>
+  <label class="cp-row">
+    <span>Interplanetary Saturday was on</span>
+    <input type="date" id="epoch-date" value="2000-01-01">
+  </label>
+</div>
+
+<script>
+// ── Constants (ported from Rust) ─────────────────────────────────────────────
+const J2000_UNIX    = 946728000.0;
+let referenceEpoch  = J2000_UNIX;
+const EARTH_DAY_S   = 86400.0;
+const TUESDAY       = 3;
+const DAY_NAMES     = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+// ── Planet data ──────────────────────────────────────────────────────────────
+const PLANETS = [
+  {
+    name: 'Mercury', solarDayHours: 4222.6, useSol: false,
+    orbitalDays: 87.97, orbitR: 72, size: 6,
+    bg: 'radial-gradient(circle at 35% 30%, #d8d8d8, #9a9a9a 55%, #5a5a5a)',
+  },
+  {
+    name: 'Venus', solarDayHours: 2802.0, useSol: false,
+    orbitalDays: 224.70, orbitR: 110, size: 10,
+    bg: 'radial-gradient(circle at 35% 30%, #f5e6c8, #d4a84b 50%, #8a681e)',
+  },
+  {
+    name: 'Earth', solarDayHours: 24.0, useSol: false,
+    orbitalDays: 365.25, orbitR: 150, size: 10,
+    bg: 'radial-gradient(circle at 35% 30%, #b8e0f7, #3a8cc1 50%, #1a4f7a)',
+  },
+  {
+    name: 'Mars', solarDayHours: 24.6598, useSol: true,
+    orbitalDays: 686.97, orbitR: 192, size: 8,
+    bg: 'radial-gradient(circle at 35% 30%, #e8836a, #bf4517 50%, #7a2b0c)',
+  },
+  {
+    name: 'Jupiter', solarDayHours: 9.9250, useSol: false,
+    orbitalDays: 4332.59, orbitR: 248, size: 22,
+    bg: 'radial-gradient(circle at 35% 30%, #e8d0a8, #c8923c 45%, #8a601e)',
+  },
+  {
+    name: 'Saturn', solarDayHours: 10.6562, useSol: false,
+    orbitalDays: 10759.22, orbitR: 305, size: 18, hasRing: true,
+    bg: 'radial-gradient(circle at 35% 30%, #f2e8b8, #e0cc88 50%, #b09840)',
+  },
+  {
+    name: 'Uranus', solarDayHours: 17.2400, useSol: false,
+    orbitalDays: 30688.5, orbitR: 358, size: 14,
+    bg: 'radial-gradient(circle at 35% 30%, #d8f4fa, #7ecae0 50%, #3a8caa)',
+  },
+  {
+    name: 'Neptune', solarDayHours: 16.1100, useSol: false,
+    orbitalDays: 60182.0, orbitR: 404, size: 13,
+    bg: 'radial-gradient(circle at 35% 30%, #8898e8, #3050c8 50%, #182080)',
+  },
+  {
+    name: 'Pluto', solarDayHours: 153.3, useSol: false,
+    orbitalDays: 90560.0, orbitR: 444, size: 5,
+    bg: 'radial-gradient(circle at 35% 30%, #dfc8a8, #c0a070 50%, #806040)',
+  },
+];
+
+// ── Orbital speed scale ──────────────────────────────────────────────────────
+// Mercury completes one visual orbit in 30 seconds
+const MERCURY_MS        = 30_000;
+const MS_PER_ORBD       = MERCURY_MS / PLANETS[0].orbitalDays;
+
+// ── Taco Tuesday logic (ported from Rust) ────────────────────────────────────
+function computeTaco(planet, nowSecs) {
+  const solarDaySecs = planet.solarDayHours * 3600;
+  const weekPos      = ((nowSecs - referenceEpoch) / solarDaySecs % 7 + 7) % 7;
+  const currentDay   = Math.floor(weekPos);
+  const frac         = weekPos - currentDay;
+
+  let isTuesday, secsUntil;
+  if (currentDay === TUESDAY) {
+    isTuesday = true;
+    secsUntil = (1 - frac) * solarDaySecs;
+  } else {
+    isTuesday = false;
+    secsUntil = ((3 - weekPos % 7) + 7) % 7 * solarDaySecs;
+  }
+
+  return { isTuesday, secsUntil, currentDay, solarDaySecs };
+}
+
+function fmtPlanetDur(secs, solarDaySecs, useSol) {
+  const d   = Math.floor(secs / solarDaySecs);
+  const rem = secs - d * solarDaySecs;
+  const h   = Math.floor(rem / 3600);
+  const m   = Math.floor((rem % 3600) / 60);
+  if (d === 0)  return `${h}h ${m}m`;
+  if (useSol)   return `${d} ${d === 1 ? 'sol' : 'sols'} ${h}h ${m}m`;
+  return `${d}d ${h}h ${m}m`;
+}
+
+function fmtEarth(secs) {
+  if (secs < 3600)         return `~${Math.round(secs / 60)}m Earth`;
+  if (secs < EARTH_DAY_S)  return `~${Math.round(secs / 3600)}h Earth`;
+  const d = secs / EARTH_DAY_S;
+  if (d < 2) return `~${d.toFixed(1)} Earth days`;
+  return `~${Math.round(d)} Earth days`;
+}
+
+function fmtTuesdayLeft(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  return `${h}h ${m}m remaining`;
+}
+
+// ── Stars ────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('stars');
+const ctx    = canvas.getContext('2d');
+
+function drawStars() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < 240; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const r = Math.random() * 1.1 + 0.2;
+    const a = Math.random() * 0.65 + 0.2;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fill();
+  }
+}
+drawStars();
+
+// ── Responsive scale ─────────────────────────────────────────────────────────
+const sys = document.getElementById('solar-system');
+
+function resize() {
+  const scale = Math.min(window.innerWidth, window.innerHeight) / 940;
+  sys.style.transform = `scale(${Math.min(1, scale)})`;
+}
+resize();
+window.addEventListener('resize', () => { resize(); drawStars(); });
+
+// ── Build DOM ─────────────────────────────────────────────────────────────────
+// Orbit rings
+const orbitRings = PLANETS.map(p => {
+  const ring = document.createElement('div');
+  ring.className = 'orbit-ring';
+  ring.style.width  = p.orbitR * 2 + 'px';
+  ring.style.height = p.orbitR * 2 + 'px';
+  sys.appendChild(ring);
+  return ring;
+});
+
+// Planet anchors + spheres + tacos
+const planetNodes = PLANETS.map((p, i) => {
+  const anchor = document.createElement('div');
+  anchor.className = 'planet-anchor';
+
+  if (p.hasRing) {
+    const ringEl = document.createElement('div');
+    ringEl.className = 'saturn-ring';
+    const rw = p.size * 2.7;
+    ringEl.style.width  = rw + 'px';
+    ringEl.style.height = rw + 'px';
+    anchor.appendChild(ringEl);
+  }
+
+  const planet = document.createElement('div');
+  planet.className = 'planet';
+  planet.style.width      = p.size + 'px';
+  planet.style.height     = p.size + 'px';
+  planet.style.background = p.bg;
+  planet.style.boxShadow  = 'inset -2px -2px 5px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.55)';
+
+  const taco = document.createElement('div');
+  taco.className   = 'taco';
+  taco.textContent = '\u{1F32E}';  // taco emoji
+
+  anchor.appendChild(planet);
+  anchor.appendChild(taco);
+  sys.appendChild(anchor);
+
+  // Spread starting angles so planets aren't bunched at the same point
+  const initialAngle = (i / PLANETS.length) * Math.PI * 2 - Math.PI / 2;
+
+  planet.addEventListener('mouseenter', e => showTip(e, p));
+  planet.addEventListener('mousemove',  e => moveTip(e));
+  planet.addEventListener('mouseleave', hideTip);
+
+  return { anchor, planet, taco, initialAngle, p };
+});
+
+// ── Animation loop ────────────────────────────────────────────────────────────
+const t0 = performance.now();
+
+function frame(now) {
+  const elapsed = now - t0;
+  const nowSecs = Date.now() / 1000;
+
+  planetNodes.forEach(({ anchor, planet, taco, initialAngle, p }) => {
+    const periodMs = p.orbitalDays * MS_PER_ORBD;
+    const angle    = initialAngle + (elapsed / periodMs) * Math.PI * 2;
+    const x        = Math.cos(angle) * p.orbitR;
+    const y        = Math.sin(angle) * p.orbitR;
+
+    anchor.style.transform = `translate(${x}px, ${y}px)`;
+
+    const { isTuesday } = computeTaco(p, nowSecs);
+
+    taco.style.display     = isTuesday ? 'block' : 'none';
+    planet.style.boxShadow = isTuesday
+      ? 'inset -2px -2px 5px rgba(0,0,0,0.45), 0 0 12px 4px rgba(255, 200, 0, 0.65)'
+      : 'inset -2px -2px 5px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.55)';
+  });
+
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+
+// ── Tooltip ──────────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+const ttInner = document.getElementById('tt-inner');
+
+function showTip(e, p) {
+  const nowSecs = Date.now() / 1000;
+  const { isTuesday, secsUntil, currentDay, solarDaySecs } = computeTaco(p, nowSecs);
+  const dayLabel = DAY_NAMES[currentDay];
+  const unit     = p.useSol ? 'Sol' : 'Day';
+
+  let html = `
+    <div class="tt-name">${p.name}</div>
+    <div class="tt-day">Local ${unit} &mdash; ${isTuesday ? 'Tuesday' : dayLabel}</div>
+  `;
+
+  if (isTuesday) {
+    html += `
+      <div class="tt-taco-banner">&#127790; It&rsquo;s Taco Tuesday!</div>
+      <div class="tt-earth">${fmtTuesdayLeft(secsUntil)}</div>
+    `;
+  } else {
+    const planetDur = fmtPlanetDur(secsUntil, solarDaySecs, p.useSol);
+    const earthEq   = fmtEarth(secsUntil);
+    html += `
+      <div class="tt-label">Next Taco Tuesday in</div>
+      <div class="tt-value">${planetDur}</div>
+      <div class="tt-earth">${earthEq}</div>
+    `;
+  }
+
+  ttInner.innerHTML = html;
+  moveTip(e);
+  tooltip.classList.add('show');
+}
+
+function moveTip(e) {
+  const pad = 12;
+  let x = e.clientX + 18;
+  let y = e.clientY - 12;
+  const w = tooltip.offsetWidth;
+  const h = tooltip.offsetHeight;
+  if (x + w > window.innerWidth  - pad) x = e.clientX - w - 18;
+  if (y + h > window.innerHeight - pad) y = window.innerHeight - h - pad;
+  if (y < pad) y = pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top  = y + 'px';
+}
+
+function hideTip() {
+  tooltip.classList.remove('show');
+}
+
+// ── Control Panel ─────────────────────────────────────────────────────────────
+const PLUTO_IDX = 8;
+
+document.getElementById('pluto-planet').addEventListener('change', function () {
+  const show = this.checked;
+  planetNodes[PLUTO_IDX].anchor.style.display = show ? '' : 'none';
+  orbitRings[PLUTO_IDX].style.display         = show ? '' : 'none';
+});
+
+document.getElementById('epoch-date').addEventListener('change', function () {
+  if (!this.value) return;
+  // Parse "YYYY-MM-DD" as UTC midnight
+  const ms = Date.parse(this.value + 'T00:00:00Z');
+  if (!isNaN(ms)) referenceEpoch = ms / 1000;
+});
+</script>
+
+</body>
+</html>
