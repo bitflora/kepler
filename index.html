@@ -349,7 +349,7 @@ const PLANET_SIZE_SCALE = 2.5;
 const PLANETS = [
   {
     name: 'Mercury', solarDayHours: 4222.6, useSol: false,
-    orbitalDays: 87.97, orbitR: 72, size: 18 * PLANET_SIZE_SCALE,
+    orbitalDays: 87.97, orbitR: 72, size: 6 * PLANET_SIZE_SCALE,
     bg: 'radial-gradient(circle at 35% 30%, #d8d8d8, #9a9a9a 55%, #5a5a5a)',
   },
   {
@@ -360,7 +360,16 @@ const PLANETS = [
   {
     name: 'Earth', solarDayHours: 24.0, useSol: false,
     orbitalDays: 365.25, orbitR: 150, size: 10 * PLANET_SIZE_SCALE,
-    bg: 'radial-gradient(circle at 35% 30%, #b8e0f7, #3a8cc1 50%, #1a4f7a)',
+    bg: [
+      'radial-gradient(circle at 35% 28%, rgba(255,255,255,0.22) 0%, transparent 48%)',
+      'radial-gradient(ellipse 22% 32% at 28% 50%, #2e7d32 0%, transparent 100%)',
+      'radial-gradient(ellipse 16% 22% at 20% 36%, #388e3c 0%, transparent 100%)',
+      'radial-gradient(ellipse 28% 30% at 62% 42%, #33691e 0%, transparent 100%)',
+      'radial-gradient(ellipse 18% 26% at 70% 58%, #558b2f 0%, transparent 100%)',
+      'radial-gradient(ellipse 16% 16% at 56% 64%, #8d6e63 0%, transparent 100%)',
+      'radial-gradient(ellipse 12% 12% at 76% 68%, #a1887f 0%, transparent 100%)',
+      'radial-gradient(circle at 40% 42%, #1565c0 0%, #0d47a1 55%, #01579b 100%)',
+    ].join(','),
   },
   {
     name: 'Mars', solarDayHours: 24.6598, useSol: true,
@@ -370,22 +379,55 @@ const PLANETS = [
   {
     name: 'Jupiter', solarDayHours: 9.9250, useSol: false,
     orbitalDays: 4332.59, orbitR: 248, size: 22 * PLANET_SIZE_SCALE,
-    bg: 'radial-gradient(circle at 35% 30%, #e8d0a8, #c8923c 45%, #8a601e)',
+    bg: [
+      'radial-gradient(circle at 35% 28%, rgba(255,240,200,0.28) 0%, transparent 48%)',
+      'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.5) 100%)',
+      'radial-gradient(ellipse 10% 6% at 70% 57%, rgba(160,45,25,0.55) 0%, transparent 100%)',
+      'linear-gradient(to bottom, transparent 5%,  rgba(90,35,5,0.55)    14%, transparent 25%)',
+      'linear-gradient(to bottom, transparent 20%, rgba(210,165,75,0.5)  30%, transparent 42%)',
+      'linear-gradient(to bottom, transparent 38%, rgba(75,28,5,0.5)     48%, transparent 60%)',
+      'linear-gradient(to bottom, transparent 55%, rgba(195,145,55,0.5)  65%, transparent 76%)',
+      'linear-gradient(to bottom, transparent 72%, rgba(100,45,10,0.45)  81%, transparent 92%)',
+      'radial-gradient(circle at 48% 52%, #d4a050 0%, #a06020 55%, #7a4015 100%)',
+    ].join(','),
   },
   {
     name: 'Saturn', solarDayHours: 10.6562, useSol: false,
     orbitalDays: 10759.22, orbitR: 305, size: 18 * PLANET_SIZE_SCALE, hasRing: true,
-    bg: 'radial-gradient(circle at 35% 30%, #f2e8b8, #e0cc88 50%, #b09840)',
+    bg: [
+      'radial-gradient(circle at 35% 28%, rgba(255,250,220,0.30) 0%, transparent 48%)',
+      'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.45) 100%)',
+      'linear-gradient(to bottom, transparent 8%,  rgba(150,110,20,0.4)  18%, transparent 30%)',
+      'linear-gradient(to bottom, transparent 25%, rgba(240,225,155,0.45) 35%, transparent 47%)',
+      'linear-gradient(to bottom, transparent 43%, rgba(130,95,15,0.4)   53%, transparent 64%)',
+      'linear-gradient(to bottom, transparent 61%, rgba(235,218,148,0.4) 71%, transparent 82%)',
+      'linear-gradient(to bottom, transparent 78%, rgba(155,115,22,0.38) 87%, transparent 96%)',
+      'radial-gradient(circle at 48% 52%, #ece290 0%, #d4b848 50%, #b89030 100%)',
+    ].join(','),
   },
   {
     name: 'Uranus', solarDayHours: 17.2400, useSol: false,
     orbitalDays: 30688.5, orbitR: 358, size: 14 * PLANET_SIZE_SCALE,
-    bg: 'radial-gradient(circle at 35% 30%, #d8f4fa, #7ecae0 50%, #3a8caa)',
+    bg: [
+      'radial-gradient(circle at 35% 28%, rgba(255,255,255,0.22) 0%, transparent 48%)',
+      'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.4) 100%)',
+      'linear-gradient(to bottom, transparent 15%, rgba(30,160,185,0.3)  28%, transparent 43%)',
+      'linear-gradient(to bottom, transparent 46%, rgba(100,210,225,0.25) 58%, transparent 72%)',
+      'linear-gradient(to bottom, transparent 69%, rgba(25,145,170,0.28) 80%, transparent 93%)',
+      'radial-gradient(circle at 48% 52%, #78d8e8 0%, #40b4c8 50%, #2090a8 100%)',
+    ].join(','),
   },
   {
     name: 'Neptune', solarDayHours: 16.1100, useSol: false,
     orbitalDays: 60182.0, orbitR: 404, size: 13 * PLANET_SIZE_SCALE,
-    bg: 'radial-gradient(circle at 35% 30%, #8898e8, #3050c8 50%, #182080)',
+    bg: [
+      'radial-gradient(circle at 35% 28%, rgba(180,200,255,0.28) 0%, transparent 48%)',
+      'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.5) 100%)',
+      'linear-gradient(to bottom, transparent 10%, rgba(80,120,220,0.4)  22%, transparent 36%)',
+      'linear-gradient(to bottom, transparent 39%, rgba(20,50,160,0.4)   51%, transparent 64%)',
+      'linear-gradient(to bottom, transparent 66%, rgba(60,100,200,0.38) 77%, transparent 89%)',
+      'radial-gradient(circle at 48% 52%, #3860d8 0%, #1838b8 50%, #0c2090 100%)',
+    ].join(','),
   },
   {
     name: 'Pluto', solarDayHours: 153.3, useSol: false,
