@@ -63,7 +63,7 @@
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      background: radial-gradient(circle at 38% 35%, #fffde4, #ffd700 30%, #ff8c00 62%, #ff4500 90%);
+      background: url('images/sun.jpg') center/cover no-repeat;
       box-shadow:
         0 0 18px 7px rgba(255, 210, 0, 0.85),
         0 0 55px 22px rgba(255, 140, 0, 0.42),
@@ -325,7 +325,7 @@
     <span>Pluto is a planet</span>
   </label>
   <label class="cp-row">
-    <span>Interplanetary Saturday was on</span>
+    <span>Planetary days aligned on</span>
     <input type="date" id="epoch-date" value="2000-01-01">
   </label>
   <label class="cp-row">
@@ -339,7 +339,7 @@
 <script>
 // ── Constants (ported from Rust) ─────────────────────────────────────────────
 const J2000_UNIX    = 946728000.0;
-let referenceEpoch  = J2000_UNIX;
+let planetEpochs    = null; // initialized after PLANETS is defined
 const EARTH_DAY_S   = 86400.0;
 const TUESDAY       = 3;
 const DAY_NAMES     = ['Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
@@ -351,16 +351,19 @@ const PLANETS = [
   {
     name: 'Mercury', solarDayHours: 4222.6, useSol: false,
     orbitalDays: 87.97, orbitR: 72, size: 6 * PLANET_SIZE_SCALE,
+    img: 'images/mercury.jpg',
     bg: 'radial-gradient(circle at 35% 30%, #d8d8d8, #9a9a9a 55%, #5a5a5a)',
   },
   {
     name: 'Venus', solarDayHours: 2802.0, useSol: false,
     orbitalDays: 224.70, orbitR: 110, size: 10 * PLANET_SIZE_SCALE,
+    img: 'images/venus.jpg',
     bg: 'radial-gradient(circle at 35% 30%, #f5e6c8, #d4a84b 50%, #8a681e)',
   },
   {
     name: 'Earth', solarDayHours: 24.0, useSol: false,
     orbitalDays: 365.25, orbitR: 150, size: 10 * PLANET_SIZE_SCALE,
+    img: 'images/earth.jpg',
     bg: [
       'radial-gradient(circle at 35% 28%, rgba(255,255,255,0.22) 0%, transparent 48%)',
       'radial-gradient(ellipse 22% 32% at 28% 50%, #2e7d32 0%, transparent 100%)',
@@ -375,11 +378,13 @@ const PLANETS = [
   {
     name: 'Mars', solarDayHours: 24.6598, useSol: true,
     orbitalDays: 686.97, orbitR: 192, size: 8 * PLANET_SIZE_SCALE,
+    img: 'images/mars.jpg',
     bg: 'radial-gradient(circle at 35% 30%, #e8836a, #bf4517 50%, #7a2b0c)',
   },
   {
     name: 'Jupiter', solarDayHours: 9.9250, useSol: false,
     orbitalDays: 4332.59, orbitR: 248, size: 22 * PLANET_SIZE_SCALE,
+    img: 'images/jupiter.jpg',
     bg: [
       'radial-gradient(circle at 35% 28%, rgba(255,240,200,0.28) 0%, transparent 48%)',
       'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.5) 100%)',
@@ -395,6 +400,7 @@ const PLANETS = [
   {
     name: 'Saturn', solarDayHours: 10.6562, useSol: false,
     orbitalDays: 10759.22, orbitR: 305, size: 18 * PLANET_SIZE_SCALE, hasRing: true,
+    img: 'images/saturn.jpg',
     bg: [
       'radial-gradient(circle at 35% 28%, rgba(255,250,220,0.30) 0%, transparent 48%)',
       'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.45) 100%)',
@@ -409,6 +415,7 @@ const PLANETS = [
   {
     name: 'Uranus', solarDayHours: 17.2400, useSol: false,
     orbitalDays: 30688.5, orbitR: 358, size: 14 * PLANET_SIZE_SCALE,
+    img: 'images/uranus.jpg',
     bg: [
       'radial-gradient(circle at 35% 28%, rgba(255,255,255,0.22) 0%, transparent 48%)',
       'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.4) 100%)',
@@ -421,6 +428,7 @@ const PLANETS = [
   {
     name: 'Neptune', solarDayHours: 16.1100, useSol: false,
     orbitalDays: 60182.0, orbitR: 404, size: 13 * PLANET_SIZE_SCALE,
+    img: 'images/neptune.jpg',
     bg: [
       'radial-gradient(circle at 35% 28%, rgba(180,200,255,0.28) 0%, transparent 48%)',
       'radial-gradient(circle at 50% 50%, transparent 42%, rgba(0,0,0,0.5) 100%)',
@@ -437,6 +445,16 @@ const PLANETS = [
   },
 ];
 
+// Per-planet epochs — aligned so all planets share Earth's weekday on a chosen date.
+// Initialized to J2000 (all Saturday) matching the default datepicker value.
+planetEpochs = PLANETS.map(() => J2000_UNIX);
+
+function alignEpochsToDate(dateSecs) {
+  const earthSolarDaySecs = PLANETS[2].solarDayHours * 3600;
+  const earthWeekPos = ((dateSecs - J2000_UNIX) / earthSolarDaySecs % 7 + 7) % 7;
+  planetEpochs = PLANETS.map(p => dateSecs - earthWeekPos * p.solarDayHours * 3600);
+}
+
 // ── Orbital speed scale ──────────────────────────────────────────────────────
 // Mercury completes one visual orbit in 30 seconds at default speed (multiplier = 1)
 const MERCURY_MS        = 30_000;
@@ -444,9 +462,9 @@ const MS_PER_ORBD       = MERCURY_MS / PLANETS[0].orbitalDays;
 let   speedMultiplier   = 5;     // controlled by #speed-slider
 
 // ── Taco Tuesday logic (ported from Rust) ────────────────────────────────────
-function computeTaco(planet, nowSecs) {
+function computeTaco(planet, nowSecs, epoch) {
   const solarDaySecs = planet.solarDayHours * 3600;
-  const weekPos      = ((nowSecs - referenceEpoch) / solarDaySecs % 7 + 7) % 7;
+  const weekPos      = ((nowSecs - epoch) / solarDaySecs % 7 + 7) % 7;
   const currentDay   = Math.floor(weekPos);
   const frac         = weekPos - currentDay;
 
@@ -546,7 +564,13 @@ const planetNodes = PLANETS.map((p, i) => {
   planet.className = 'planet';
   planet.style.width      = p.size + 'px';
   planet.style.height     = p.size + 'px';
-  planet.style.background = p.bg;
+  if (p.img) {
+    planet.style.backgroundImage    = `url('${p.img}')`;
+    planet.style.backgroundSize     = 'cover';
+    planet.style.backgroundPosition = 'center';
+  } else {
+    planet.style.background = p.bg;
+  }
   planet.style.boxShadow  = 'inset -2px -2px 5px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.55)';
 
   const taco = document.createElement('div');
@@ -560,7 +584,7 @@ const planetNodes = PLANETS.map((p, i) => {
   // Spread starting angles so planets aren't bunched at the same point
   const initialAngle = (i / PLANETS.length) * Math.PI * 2 - Math.PI / 2;
 
-  planet.addEventListener('mouseenter', e => showTip(e, p));
+  planet.addEventListener('mouseenter', e => showTip(e, p, i));
   planet.addEventListener('mousemove',  e => moveTip(e));
   planet.addEventListener('mouseleave', hideTip);
 
@@ -577,7 +601,7 @@ function frame(now) {
   virtualElapsed  += dt * speedMultiplier;
   const nowSecs    = Date.now() / 1000;
 
-  planetNodes.forEach(({ anchor, planet, taco, initialAngle, p }) => {
+  planetNodes.forEach(({ anchor, planet, taco, initialAngle, p }, i) => {
     const periodMs = p.orbitalDays * MS_PER_ORBD;
     const angle    = initialAngle + (virtualElapsed / periodMs) * Math.PI * 2;
     const x        = Math.cos(angle) * p.orbitR;
@@ -585,7 +609,7 @@ function frame(now) {
 
     anchor.style.transform = `translate(${x}px, ${y}px)`;
 
-    const { isTuesday } = computeTaco(p, nowSecs);
+    const { isTuesday } = computeTaco(p, nowSecs, planetEpochs[i]);
 
     taco.style.display     = isTuesday ? 'block' : 'none';
     planet.style.boxShadow = isTuesday
@@ -602,9 +626,9 @@ requestAnimationFrame(frame);
 const tooltip = document.getElementById('tooltip');
 const ttInner = document.getElementById('tt-inner');
 
-function showTip(e, p) {
+function showTip(e, p, idx) {
   const nowSecs = Date.now() / 1000;
-  const { isTuesday, secsUntil, currentDay, solarDaySecs } = computeTaco(p, nowSecs);
+  const { isTuesday, secsUntil, currentDay, solarDaySecs } = computeTaco(p, nowSecs, planetEpochs[idx]);
   const dayLabel = DAY_NAMES[currentDay];
   const unit     = p.useSol ? 'Sol' : 'Day';
 
@@ -665,9 +689,8 @@ document.getElementById('speed-slider').addEventListener('input', function () {
 
 document.getElementById('epoch-date').addEventListener('change', function () {
   if (!this.value) return;
-  // Parse "YYYY-MM-DD" as UTC midnight
   const ms = Date.parse(this.value + 'T00:00:00Z');
-  if (!isNaN(ms)) referenceEpoch = ms / 1000;
+  if (!isNaN(ms)) alignEpochsToDate(ms / 1000);
 });
 </script>
 

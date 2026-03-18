@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A project that calculates when it's "Taco Tuesday" on different planets:
 - **Web visualization** (`index.html`): Interactive animated solar system with per-planet Taco Tuesday status
 
-Ignore everything but the html.
+Ignore everything but the html. Images to be used in the html can be found in the images subdirectory.
 
 ## Architecture
 
