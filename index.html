@@ -63,24 +63,15 @@
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      background: url('images/sun.jpg') center/cover no-repeat;
+      background-image: url('images/sun.jpg');
+      background-size: cover;
+      background-repeat: repeat-x;
+      background-position: 0px 50%;
       box-shadow:
         0 0 18px 7px rgba(255, 210, 0, 0.85),
         0 0 55px 22px rgba(255, 140, 0, 0.42),
         0 0 110px 45px rgba(255, 70, 0, 0.18);
       z-index: 10;
-    }
-
-    #sun-taco {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 20px;
-      line-height: 1;
-      z-index: 11;
-      pointer-events: none;
-      filter: drop-shadow(0 0 8px rgba(255, 210, 0, 0.9));
     }
 
     /* Zero-size anchor positioned at the planet's orbital location */
@@ -104,6 +95,7 @@
       pointer-events: none;
       z-index: 4;
     }
+
 
     .planet {
       position: absolute;
@@ -311,7 +303,6 @@
 
 <div id="solar-system">
   <div id="sun"></div>
-  <div id="sun-taco">🌮</div>
 </div>
 
 <div id="tooltip">
@@ -567,7 +558,8 @@ const planetNodes = PLANETS.map((p, i) => {
   if (p.img) {
     planet.style.backgroundImage    = `url('${p.img}')`;
     planet.style.backgroundSize     = 'cover';
-    planet.style.backgroundPosition = 'center';
+    planet.style.backgroundRepeat   = 'repeat-x';
+    planet.style.backgroundPosition = '0px 50%';
   } else {
     planet.style.background = p.bg;
   }
@@ -588,10 +580,19 @@ const planetNodes = PLANETS.map((p, i) => {
   planet.addEventListener('mousemove',  e => moveTip(e));
   planet.addEventListener('mouseleave', hideTip);
 
-  return { anchor, planet, taco, initialAngle, p };
+  // px per ms for one full rotation (capped so slow rotators are still visible)
+  const spinDurMs = Math.max(3000, Math.min(60000, p.solarDayHours / 24 * 8000));
+  const spinPxPerMs = p.img ? p.size / spinDurMs : 0;
+
+  return { anchor, planet, taco, initialAngle, p, spinPxPerMs, rotOffset: 0 };
 });
 
 // ── Animation loop ────────────────────────────────────────────────────────────
+const sunEl       = document.getElementById('sun');
+const SUN_SIZE    = 50;                          // px (matches #sun CSS)
+const SUN_DUR_MS  = 216_000;                     // ~27 Earth days scaled to visual speed
+let   sunRotOffset = 0;
+
 let virtualElapsed = 0;
 let lastFrameTime  = performance.now();
 
@@ -601,13 +602,22 @@ function frame(now) {
   virtualElapsed  += dt * speedMultiplier;
   const nowSecs    = Date.now() / 1000;
 
-  planetNodes.forEach(({ anchor, planet, taco, initialAngle, p }, i) => {
+  sunRotOffset = (sunRotOffset + dt * speedMultiplier * (SUN_SIZE * 2) / SUN_DUR_MS) % (SUN_SIZE * 2);
+  sunEl.style.backgroundPosition = `${-sunRotOffset}px 50%`;
+
+  planetNodes.forEach((node, i) => {
+    const { anchor, planet, taco, initialAngle, p } = node;
     const periodMs = p.orbitalDays * MS_PER_ORBD;
     const angle    = initialAngle + (virtualElapsed / periodMs) * Math.PI * 2;
     const x        = Math.cos(angle) * p.orbitR;
     const y        = Math.sin(angle) * p.orbitR;
 
     anchor.style.transform = `translate(${x}px, ${y}px)`;
+
+    if (node.spinPxPerMs) {
+      node.rotOffset = (node.rotOffset + dt * speedMultiplier * node.spinPxPerMs) % (p.size * 2);
+      planet.style.backgroundPosition = `${-node.rotOffset}px 50%`;
+    }
 
     const { isTuesday } = computeTaco(p, nowSecs, planetEpochs[i]);
 
