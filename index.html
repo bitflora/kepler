@@ -474,6 +474,7 @@ function alignEpochsToDate(dateSecs) {
 
 // ── Orbital speed scale ──────────────────────────────────────────────────────
 // Mercury completes one visual orbit in 30 seconds at default speed (multiplier = 1)
+const ORBIT_Y_RATIO     = 0.55;   // vertical compression for elliptical orbits
 const MERCURY_MS        = 30_000;
 const MS_PER_ORBD       = MERCURY_MS / PLANETS[0].orbitalDays;
 let   speedMultiplier   = 5;     // controlled by #speed-slider
@@ -558,7 +559,7 @@ const orbitRings = PLANETS.map(p => {
   const ring = document.createElement('div');
   ring.className = 'orbit-ring';
   ring.style.width  = p.orbitR * 2 + 'px';
-  ring.style.height = p.orbitR * 2 + 'px';
+  ring.style.height = p.orbitR * 2 * ORBIT_Y_RATIO + 'px';
   sys.appendChild(ring);
   return ring;
 });
@@ -649,7 +650,7 @@ function frame(now) {
     const periodMs = p.orbitalDays * MS_PER_ORBD;
     const angle    = initialAngle + (virtualElapsed / periodMs) * Math.PI * 2;
     const x        = Math.cos(angle) * p.orbitR;
-    const y        = Math.sin(angle) * p.orbitR;
+    const y        = Math.sin(angle) * p.orbitR * ORBIT_Y_RATIO;
 
     anchor.style.transform = `translate(${x}px, ${y}px)`;
 
