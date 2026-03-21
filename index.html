@@ -95,6 +95,20 @@
       filter: brightness(1.4) drop-shadow(0 0 7px rgba(255, 255, 255, 0.55));
     }
 
+    .note-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 6;
+      text-shadow: 0 0 6px rgba(0,0,0,0.9);
+    }
+
     /* ── Control Panel ────────────────────────────────────────────────────── */
     #control-panel {
       position: fixed;
@@ -165,6 +179,12 @@
       font-size: 11px;
       color: #bccde8;
     }
+
+    .cp-divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      margin: 3px 0;
+    }
   </style>
 </head>
 <body>
@@ -176,11 +196,9 @@
 </div>
 
 <div id="control-panel">
-  <div class="cp-title">Solar System</div>
-  <label class="cp-row">
-    <input type="checkbox" id="pluto-planet" checked>
-    <span>Pluto is a planet</span>
-  </label>
+  <div class="cp-title">Kepler's Spheres</div>
+  <div id="planet-mutes"></div>
+  <hr class="cp-divider">
   <label class="cp-row">
     <span>Speed</span>
     <span class="cp-slider-label">slow</span>
@@ -198,56 +216,76 @@ const PLANETS = [
     orbitalDays: 87.97, orbitR: 72, size: 6 * PLANET_SIZE_SCALE,
     solarDayHours: 4222.6,
     img: 'images/mercury.jpg',
+    lowNote:  { name: 'A4',  freq: 440.00 },
+    highNote: { name: 'C6',  freq: 1046.50 },
   },
   {
     name: 'Venus',
     orbitalDays: 224.70, orbitR: 110, size: 10 * PLANET_SIZE_SCALE,
     solarDayHours: 2802.0,
     img: 'images/venus.jpg',
+    lowNote:  { name: 'E4',  freq: 329.63 },
+    highNote: { name: 'E4',  freq: 329.63 },
   },
   {
     name: 'Earth',
     orbitalDays: 365.25, orbitR: 150, size: 10 * PLANET_SIZE_SCALE,
     solarDayHours: 24.0,
     img: 'images/earth.jpg',
+    lowNote:  { name: 'E4',  freq: 329.63 },
+    highNote: { name: 'F4',  freq: 349.23 },
   },
   {
     name: 'Mars',
     orbitalDays: 686.97, orbitR: 192, size: 8 * PLANET_SIZE_SCALE,
     solarDayHours: 24.6598,
     img: 'images/mars.jpg',
+    lowNote:  { name: 'F3',  freq: 174.61 },
+    highNote: { name: 'C4',  freq: 261.63 },
   },
   {
     name: 'Jupiter',
     orbitalDays: 4332.59, orbitR: 248, size: 22 * PLANET_SIZE_SCALE,
     solarDayHours: 9.9250,
     img: 'images/jupiter.jpg',
+    lowNote:  { name: 'G3',  freq: 196.00 },
+    highNote: { name: 'Bb3', freq: 233.08 },
   },
   {
     name: 'Saturn',
     orbitalDays: 10759.22, orbitR: 305, size: 18 * PLANET_SIZE_SCALE, hasRing: true,
     solarDayHours: 10.6562,
     img: 'images/saturn.jpg',
-  },
-  {
-    name: 'Uranus',
-    orbitalDays: 30688.5, orbitR: 358, size: 14 * PLANET_SIZE_SCALE,
-    solarDayHours: 17.2400,
-    img: 'images/uranus.jpg',
-  },
-  {
-    name: 'Neptune',
-    orbitalDays: 60182.0, orbitR: 404, size: 13 * PLANET_SIZE_SCALE,
-    solarDayHours: 16.1100,
-    img: 'images/neptune.jpg',
-  },
-  {
-    name: 'Pluto',
-    orbitalDays: 90560.0, orbitR: 444, size: 5 * PLANET_SIZE_SCALE,
-    solarDayHours: 153.3,
-    bg: 'radial-gradient(circle at 35% 30%, #dfc8a8, #c0a070 50%, #806040)',
+    lowNote:  { name: 'G3',  freq: 196.00 },
+    highNote: { name: 'B3',  freq: 246.94 },
   },
 ];
+
+// ── Note lookup table ─────────────────────────────────────────────────────────
+const NOTE_TABLE = [
+  {name:'A2', freq:110.00}, {name:'Bb2',freq:116.54}, {name:'B2', freq:123.47},
+  {name:'C3', freq:130.81}, {name:'Db3',freq:138.59}, {name:'D3', freq:146.83},
+  {name:'Eb3',freq:155.56}, {name:'E3', freq:164.81}, {name:'F3', freq:174.61},
+  {name:'Gb3',freq:185.00}, {name:'G3', freq:196.00}, {name:'Ab3',freq:207.65},
+  {name:'A3', freq:220.00}, {name:'Bb3',freq:233.08}, {name:'B3', freq:246.94},
+  {name:'C4', freq:261.63}, {name:'Db4',freq:277.18}, {name:'D4', freq:293.66},
+  {name:'Eb4',freq:311.13}, {name:'E4', freq:329.63}, {name:'F4', freq:349.23},
+  {name:'Gb4',freq:369.99}, {name:'G4', freq:392.00}, {name:'Ab4',freq:415.30},
+  {name:'A4', freq:440.00}, {name:'Bb4',freq:466.16}, {name:'B4', freq:493.88},
+  {name:'C5', freq:523.25}, {name:'D5', freq:587.33}, {name:'E5', freq:659.26},
+  {name:'F5', freq:698.46}, {name:'G5', freq:783.99}, {name:'A5', freq:880.00},
+  {name:'B5', freq:987.77}, {name:'C6', freq:1046.50},
+];
+
+function nearestNote(freq) {
+  let best = NOTE_TABLE[0];
+  let bestDiff = Math.abs(Math.log2(freq / best.freq));
+  for (const n of NOTE_TABLE) {
+    const diff = Math.abs(Math.log2(freq / n.freq));
+    if (diff < bestDiff) { bestDiff = diff; best = n; }
+  }
+  return best.name;
+}
 
 const ORBIT_Y_RATIO   = 0.55;
 const MERCURY_MS      = 30_000;
@@ -295,7 +333,7 @@ const orbitRings = PLANETS.map(p => {
   return ring;
 });
 
-const planetNodes = PLANETS.map((p, i) => {
+const planetNodes = PLANETS.map((p) => {
   const anchor = document.createElement('div');
   anchor.className = 'planet-anchor';
 
@@ -320,15 +358,42 @@ const planetNodes = PLANETS.map((p, i) => {
   } else {
     planet.style.background = p.bg;
   }
-
   anchor.appendChild(planet);
+
+  const noteLabel = document.createElement('span');
+  noteLabel.className = 'note-label';
+  noteLabel.style.transform = `translate(-50%, calc(-100% - ${p.size / 2 + 8}px))`;
+  noteLabel.textContent = p.lowNote.name;
+  anchor.appendChild(noteLabel);
+
   sys.appendChild(anchor);
 
-  const initialAngle = (i / PLANETS.length) * Math.PI * 2 - Math.PI / 2;
+  const initialAngle = -Math.PI / 2;
   const spinDurMs    = Math.max(3000, Math.min(60000, p.solarDayHours / 24 * 8000));
   const spinPxPerMs  = p.img ? p.size / spinDurMs : 0;
 
-  return { anchor, planet, initialAngle, p, spinPxPerMs, rotOffset: 0 };
+  return { anchor, planet, noteLabel, initialAngle, p, spinPxPerMs, rotOffset: 0 };
+});
+
+// ── Audio setup ───────────────────────────────────────────────────────────────
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+planetNodes.forEach((node) => {
+  const { p } = node;
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = p.lowNote.freq;
+  gain.gain.value = 0.12;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  node.oscillator = osc;
+  node.gainNode   = gain;
+});
+
+document.addEventListener('click', () => {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
 });
 
 // ── Animation loop ────────────────────────────────────────────────────────────
@@ -349,7 +414,7 @@ function frame(now) {
   sunEl.style.backgroundPosition = `${-sunRotOffset}px 50%`;
 
   planetNodes.forEach((node) => {
-    const { anchor, planet, initialAngle, p } = node;
+    const { anchor, planet, noteLabel, initialAngle, p } = node;
     const periodMs = p.orbitalDays * MS_PER_ORBD;
     const angle    = initialAngle + (virtualElapsed / periodMs) * Math.PI * 2;
     const x        = Math.cos(angle) * p.orbitR;
@@ -361,6 +426,14 @@ function frame(now) {
       node.rotOffset = (node.rotOffset + dt * speedMultiplier * node.spinPxPerMs) % (p.size * 2);
       planet.style.backgroundPosition = `${-node.rotOffset}px 50%`;
     }
+
+    // Update pitch: t=0 at top (aphelion-like), t=1 at bottom; sine maps orbit to [0,1]
+    const t    = (Math.sin(angle) + 1) / 2;
+    const freq = p.lowNote.freq + (p.highNote.freq - p.lowNote.freq) * t;
+    node.oscillator.frequency.linearRampToValueAtTime(freq, audioCtx.currentTime + 0.05);
+
+    const noteName = nearestNote(freq);
+    if (noteLabel.textContent !== noteName) noteLabel.textContent = noteName;
   });
 
   requestAnimationFrame(frame);
@@ -369,12 +442,25 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // ── Control Panel ─────────────────────────────────────────────────────────────
-const PLUTO_IDX = 8;
+const mutesContainer = document.getElementById('planet-mutes');
 
-document.getElementById('pluto-planet').addEventListener('change', function () {
-  const show = this.checked;
-  planetNodes[PLUTO_IDX].anchor.style.display = show ? '' : 'none';
-  orbitRings[PLUTO_IDX].style.display         = show ? '' : 'none';
+planetNodes.forEach((node) => {
+  const label = document.createElement('label');
+  label.className = 'cp-row';
+
+  const cb = document.createElement('input');
+  cb.type    = 'checkbox';
+  cb.checked = true;
+  cb.addEventListener('change', () => {
+    node.gainNode.gain.value = cb.checked ? 0.12 : 0;
+  });
+
+  const span = document.createElement('span');
+  span.textContent = node.p.name;
+
+  label.appendChild(cb);
+  label.appendChild(span);
+  mutesContainer.appendChild(label);
 });
 
 document.getElementById('speed-slider').addEventListener('input', function () {
