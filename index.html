@@ -254,7 +254,12 @@
     }
 
     /* ── Restart button ────────────────────────────────────────────────────── */
-    #restart-btn {
+    .cp-btn-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .cp-btn {
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.13);
       border-radius: 6px;
@@ -262,11 +267,10 @@
       font-size: 12px;
       padding: 4px 10px;
       cursor: pointer;
-      align-self: flex-start;
       transition: background 0.15s;
     }
 
-    #restart-btn:hover {
+    .cp-btn:hover {
       background: rgba(255,255,255,0.12);
     }
   </style>
@@ -308,7 +312,10 @@
   <hr class="cp-divider">
   <div id="planet-mutes"></div>
   <hr class="cp-divider">
-  <button id="restart-btn">↺ Restart</button>
+  <div class="cp-btn-row">
+    <button id="pause-btn" class="cp-btn">⏸ Pause</button>
+    <button id="restart-btn" class="cp-btn">↺ Restart</button>
+  </div>
   <hr class="cp-divider">
   <label class="cp-row">
     <span>Speed</span>
@@ -668,7 +675,26 @@ document.getElementById('start-btn').addEventListener('click', async () => {
   if (!audioUnlocked) { audioUnlocked = true; maybeStart(); }
 });
 
-document.getElementById('restart-btn').addEventListener('click', () => {
+const pauseBtn = document.getElementById('pause-btn');
+pauseBtn.addEventListener('click', async () => {
+  paused = !paused;
+  if (paused) {
+    lastFrameTime = performance.now(); // prevent dt spike on resume
+    await audioCtx.suspend();
+    pauseBtn.textContent = '▶ Resume';
+  } else {
+    await audioCtx.resume();
+    lastFrameTime = performance.now();
+    pauseBtn.textContent = '⏸ Pause';
+  }
+});
+
+document.getElementById('restart-btn').addEventListener('click', async () => {
+  if (paused) {
+    paused = false;
+    await audioCtx.resume();
+    pauseBtn.textContent = '⏸ Pause';
+  }
   virtualElapsed = 0;
   lastFrameTime  = performance.now();
 });
@@ -681,13 +707,14 @@ let   sunRotOffset = 0;
 
 let virtualElapsed = 0;
 let lastFrameTime  = performance.now();
+let paused         = false;
 
 function frame(now) {
   const dt = now - lastFrameTime;
-  lastFrameTime   = now;
-  virtualElapsed += dt * speedMultiplier;
+  lastFrameTime = now;
+  if (!paused) virtualElapsed += dt * speedMultiplier;
 
-  sunRotOffset = (sunRotOffset + dt * speedMultiplier * (SUN_SIZE * 2) / SUN_DUR_MS) % (SUN_SIZE * 2);
+  if (!paused) sunRotOffset = (sunRotOffset + dt * speedMultiplier * (SUN_SIZE * 2) / SUN_DUR_MS) % (SUN_SIZE * 2);
   sunEl.style.backgroundPosition = `${-sunRotOffset}px 50%`;
 
   planetNodes.forEach((node) => {
