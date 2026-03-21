@@ -185,6 +185,22 @@
       border-top: 1px solid rgba(255,255,255,0.07);
       margin: 3px 0;
     }
+
+    .cp-wave-select {
+      margin-left: auto;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 5px;
+      color: #bccde8;
+      font-size: 11px;
+      padding: 2px 4px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .cp-wave-select:hover {
+      background: rgba(255,255,255,0.12);
+    }
   </style>
 </head>
 <body>
@@ -197,6 +213,23 @@
 
 <div id="control-panel">
   <div class="cp-title">Kepler's Spheres</div>
+  <label class="cp-row" id="all-row">
+    <input type="checkbox" id="all-mute" checked>
+    <span>All planets</span>
+    <select class="cp-wave-select" id="all-wave">
+      <option value="flute">Flute</option>
+      <option value="violin">Violin</option>
+      <option value="organ">Organ</option>
+      <option value="clarinet">Clarinet</option>
+      <option value="horn">French Horn</option>
+      <option value="cello">Cello</option>
+      <option value="oboe">Oboe</option>
+      <option value="theremin">Theremin</option>
+      <option value="trumpet">Trumpet</option>
+      <option value="lute">Lute</option>
+    </select>
+  </label>
+  <hr class="cp-divider">
   <div id="planet-mutes"></div>
   <hr class="cp-divider">
   <label class="cp-row">
@@ -212,7 +245,7 @@ const PLANET_SIZE_SCALE = 2.5;
 
 const PLANETS = [
   {
-    name: 'Mercury',
+    name: 'Mercury', instrument: 'flute',
     orbitalDays: 87.97, orbitR: 72, size: 6 * PLANET_SIZE_SCALE,
     solarDayHours: 4222.6,
     img: 'images/mercury.jpg',
@@ -220,7 +253,7 @@ const PLANETS = [
     highNote: { name: 'C6',  freq: 1046.50 },
   },
   {
-    name: 'Venus',
+    name: 'Venus', instrument: 'violin',
     orbitalDays: 224.70, orbitR: 110, size: 10 * PLANET_SIZE_SCALE,
     solarDayHours: 2802.0,
     img: 'images/venus.jpg',
@@ -228,7 +261,7 @@ const PLANETS = [
     highNote: { name: 'E4',  freq: 329.63 },
   },
   {
-    name: 'Earth',
+    name: 'Earth', instrument: 'organ',
     orbitalDays: 365.25, orbitR: 150, size: 10 * PLANET_SIZE_SCALE,
     solarDayHours: 24.0,
     img: 'images/earth.jpg',
@@ -236,7 +269,7 @@ const PLANETS = [
     highNote: { name: 'F4',  freq: 349.23 },
   },
   {
-    name: 'Mars',
+    name: 'Mars', instrument: 'clarinet',
     orbitalDays: 686.97, orbitR: 192, size: 8 * PLANET_SIZE_SCALE,
     solarDayHours: 24.6598,
     img: 'images/mars.jpg',
@@ -244,7 +277,7 @@ const PLANETS = [
     highNote: { name: 'C4',  freq: 261.63 },
   },
   {
-    name: 'Jupiter',
+    name: 'Jupiter', instrument: 'horn',
     orbitalDays: 4332.59, orbitR: 248, size: 22 * PLANET_SIZE_SCALE,
     solarDayHours: 9.9250,
     img: 'images/jupiter.jpg',
@@ -252,7 +285,7 @@ const PLANETS = [
     highNote: { name: 'Bb3', freq: 233.08 },
   },
   {
-    name: 'Saturn',
+    name: 'Saturn', instrument: 'cello',
     orbitalDays: 10759.22, orbitR: 305, size: 18 * PLANET_SIZE_SCALE, hasRing: true,
     solarDayHours: 10.6562,
     img: 'images/saturn.jpg',
@@ -260,6 +293,21 @@ const PLANETS = [
     highNote: { name: 'B3',  freq: 246.94 },
   },
 ];
+
+// ── Instrument definitions ────────────────────────────────────────────────────
+// imag[n] = amplitude of nth harmonic (index 0 = DC, index 1 = fundamental)
+const INSTRUMENTS = {
+  flute:    { label: 'Flute',       imag: [0, 1, 0.25, 0.03, 0.01],                              cutoff: 2200 },
+  violin:   { label: 'Violin',      imag: [0, 1, 0.5, 0.3, 0.2, 0.1, 0.07, 0.05, 0.03, 0.02],  cutoff: 2800 },
+  organ:    { label: 'Organ',       imag: [0, 1, 0.5, 0.33, 0.25, 0.1, 0.08, 0.05, 0.03],       cutoff: 1800 },
+  clarinet: { label: 'Clarinet',    imag: [0, 1, 0.05, 0.5, 0.02, 0.2, 0.01, 0.1, 0.0, 0.05],  cutoff: 1400 },
+  horn:     { label: 'French Horn', imag: [0, 1, 0.6, 0.5, 0.35, 0.25, 0.18, 0.12, 0.08, 0.05],cutoff: 1600 },
+  cello:    { label: 'Cello',       imag: [0, 1, 0.7, 0.45, 0.2, 0.1, 0.06, 0.03],              cutoff: 1200 },
+  oboe:     { label: 'Oboe',        imag: [0, 1, 0.7, 0.5, 0.3, 0.2, 0.1, 0.07, 0.05],          cutoff: 2000 },
+  theremin: { label: 'Theremin',    imag: [0, 1],                                                 cutoff: null, vibrato: true },
+  trumpet:  { label: 'Trumpet',     imag: [0, 1, 0.4, 0.6, 0.3, 0.4, 0.2, 0.1, 0.15, 0.05],    cutoff: 2400 },
+  lute:     { label: 'Lute',        imag: [0, 1, 0.6, 0.3, 0.1, 0.04, 0.01],                    cutoff: 1600 },
+};
 
 // ── Note lookup table ─────────────────────────────────────────────────────────
 const NOTE_TABLE = [
@@ -376,20 +424,86 @@ const planetNodes = PLANETS.map((p) => {
 });
 
 // ── Audio setup ───────────────────────────────────────────────────────────────
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+const TARGET_GAIN = 0.07;
+
+// Smooth gain ramp — exponential cannot reach 0, so clamp to 0.0001
+function rampGain(param, target, dur = 0.08) {
+  param.cancelScheduledValues(audioCtx.currentTime);
+  param.setValueAtTime(param.value, audioCtx.currentTime);
+  param.exponentialRampToValueAtTime(Math.max(target, 0.0001), audioCtx.currentTime + dur);
+}
+
+// Algorithmic reverb: exponentially decaying white noise impulse response
+function makeReverbIR(ctx, duration = 2.5, decay = 2.0) {
+  const len = Math.floor(ctx.sampleRate * duration);
+  const ir  = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch);
+    for (let i = 0; i < len; i++)
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  return ir;
+}
+
+// Shared reverb bus: planets → preReverbGain → [dry | convolver → wet] → destination
+const convolver      = audioCtx.createConvolver();
+convolver.buffer     = makeReverbIR(audioCtx);
+const preReverbGain  = audioCtx.createGain();  preReverbGain.gain.value = 0.8;
+const dryGain        = audioCtx.createGain();  dryGain.gain.value       = 0.6;
+const wetGain        = audioCtx.createGain();  wetGain.gain.value       = 0.4;
+preReverbGain.connect(dryGain);
+preReverbGain.connect(convolver);
+convolver.connect(wetGain);
+dryGain.connect(audioCtx.destination);
+wetGain.connect(audioCtx.destination);
+
+// Apply an instrument profile to a planet node
+function applyInstrument(node, instName) {
+  const inst = INSTRUMENTS[instName];
+  const arr  = new Float32Array(inst.imag.length);
+  const wave = audioCtx.createPeriodicWave(arr, new Float32Array(inst.imag), { disableNormalization: false });
+  node.oscillator.setPeriodicWave(wave);
+  if (node.filter && inst.cutoff) node.filter.frequency.value = inst.cutoff;
+  if (node.lfoGain) node.lfoGain.gain.value = inst.vibrato ? 8 : 0;
+  node.currentInstrument = instName;
+}
 
 planetNodes.forEach((node) => {
   const { p } = node;
+
   const osc  = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-  osc.type = 'sine';
+  gain.gain.value = TARGET_GAIN;
+
+  // Low-pass filter per planet (cutoff set by instrument)
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 1800;
+  filter.Q.value = 0.7;
+
+  // LFO for vibrato (active for theremin and other vibrato instruments)
+  const lfo     = audioCtx.createOscillator();
+  const lfoGain = audioCtx.createGain();
+  lfo.frequency.value = 4.5;
+  lfoGain.gain.value  = 0;
+  lfo.connect(lfoGain);
+  lfoGain.connect(osc.detune);
+  lfo.start();
+
   osc.frequency.value = p.lowNote.freq;
-  gain.gain.value = 0.12;
   osc.connect(gain);
-  gain.connect(audioCtx.destination);
+  gain.connect(filter);
+  filter.connect(preReverbGain);
   osc.start();
+
   node.oscillator = osc;
   node.gainNode   = gain;
+  node.filter     = filter;
+  node.lfo        = lfo;
+  node.lfoGain    = lfoGain;
+
+  applyInstrument(node, p.instrument);
 });
 
 document.addEventListener('click', () => {
@@ -452,15 +566,46 @@ planetNodes.forEach((node) => {
   cb.type    = 'checkbox';
   cb.checked = true;
   cb.addEventListener('change', () => {
-    node.gainNode.gain.value = cb.checked ? 0.12 : 0;
+    rampGain(node.gainNode.gain, cb.checked ? TARGET_GAIN : 0.0001, cb.checked ? 0.08 : 0.05);
   });
 
   const span = document.createElement('span');
   span.textContent = node.p.name;
 
+  const sel = document.createElement('select');
+  sel.className = 'cp-wave-select';
+  Object.entries(INSTRUMENTS).forEach(([val, def]) => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = def.label;
+    sel.appendChild(opt);
+  });
+  sel.value = node.p.instrument;
+  sel.addEventListener('change', () => {
+    applyInstrument(node, sel.value);
+  });
+
+  node.muteCheckbox = cb;
+  node.waveSelect   = sel;
+
   label.appendChild(cb);
   label.appendChild(span);
+  label.appendChild(sel);
   mutesContainer.appendChild(label);
+});
+
+document.getElementById('all-mute').addEventListener('change', function () {
+  planetNodes.forEach((node) => {
+    node.muteCheckbox.checked = this.checked;
+    rampGain(node.gainNode.gain, this.checked ? TARGET_GAIN : 0.0001, this.checked ? 0.08 : 0.05);
+  });
+});
+
+document.getElementById('all-wave').addEventListener('change', function () {
+  planetNodes.forEach((node) => {
+    applyInstrument(node, this.value);
+    node.waveSelect.value = this.value;
+  });
 });
 
 document.getElementById('speed-slider').addEventListener('input', function () {
