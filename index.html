@@ -201,9 +201,85 @@
     .cp-wave-select:hover {
       background: rgba(255,255,255,0.12);
     }
+
+    /* ── Start Popup ───────────────────────────────────────────────────────── */
+    #start-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(2, 8, 23, 0.88);
+      backdrop-filter: blur(8px);
+    }
+
+    #start-overlay.hidden { display: none; }
+
+    #start-box {
+      text-align: center;
+      color: #bccde8;
+    }
+
+    #start-box h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    #start-box p {
+      font-size: 14px;
+      margin-bottom: 28px;
+      opacity: 0.7;
+    }
+
+    #start-btn {
+      background: rgba(85, 136, 255, 0.18);
+      border: 1px solid rgba(85, 136, 255, 0.55);
+      border-radius: 9px;
+      color: #aac4ff;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      padding: 12px 38px;
+      cursor: pointer;
+      transition: background 0.18s, border-color 0.18s;
+    }
+
+    #start-btn:hover {
+      background: rgba(85, 136, 255, 0.32);
+      border-color: rgba(85, 136, 255, 0.9);
+    }
+
+    /* ── Restart button ────────────────────────────────────────────────────── */
+    #restart-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 6px;
+      color: #bccde8;
+      font-size: 12px;
+      padding: 4px 10px;
+      cursor: pointer;
+      align-self: flex-start;
+      transition: background 0.15s;
+    }
+
+    #restart-btn:hover {
+      background: rgba(255,255,255,0.12);
+    }
   </style>
 </head>
 <body>
+
+<div id="start-overlay">
+  <div id="start-box">
+    <h1>Kepler's Spheres</h1>
+    <p>Music of the planets, as described in<br><em>Harmonices Mundi</em> (1619)</p>
+    <button id="start-btn">Begin</button>
+  </div>
+</div>
 
 <canvas id="stars"></canvas>
 
@@ -218,7 +294,7 @@
     <span>All planets</span>
     <select class="cp-wave-select" id="all-wave">
       <option value="flute">Flute</option>
-      <option value="violin">Violin</option>
+      <option value="violin" selected>Violin</option>
       <option value="organ">Organ</option>
       <option value="clarinet">Clarinet</option>
       <option value="horn">French Horn</option>
@@ -231,6 +307,8 @@
   </label>
   <hr class="cp-divider">
   <div id="planet-mutes"></div>
+  <hr class="cp-divider">
+  <button id="restart-btn">↺ Restart</button>
   <hr class="cp-divider">
   <label class="cp-row">
     <span>Speed</span>
@@ -245,7 +323,7 @@ const PLANET_SIZE_SCALE = 2.5;
 
 const PLANETS = [
   {
-    name: 'Mercury', instrument: 'flute',
+    name: 'Mercury', instrument: 'violin',
     orbitalDays: 87.97, orbitR: 72, size: 6 * PLANET_SIZE_SCALE,
     solarDayHours: 4222.6,
     img: 'images/mercury.jpg',
@@ -261,7 +339,7 @@ const PLANETS = [
     highNote: { name: 'E4',  freq: 329.63 },
   },
   {
-    name: 'Earth', instrument: 'organ',
+    name: 'Earth', instrument: 'violin',
     orbitalDays: 365.25, orbitR: 150, size: 10 * PLANET_SIZE_SCALE,
     solarDayHours: 24.0,
     img: 'images/earth.jpg',
@@ -269,7 +347,7 @@ const PLANETS = [
     highNote: { name: 'F4',  freq: 349.23 },
   },
   {
-    name: 'Mars', instrument: 'clarinet',
+    name: 'Mars', instrument: 'violin',
     orbitalDays: 686.97, orbitR: 192, size: 8 * PLANET_SIZE_SCALE,
     solarDayHours: 24.6598,
     img: 'images/mars.jpg',
@@ -277,7 +355,7 @@ const PLANETS = [
     highNote: { name: 'C4',  freq: 261.63 },
   },
   {
-    name: 'Jupiter', instrument: 'horn',
+    name: 'Jupiter', instrument: 'violin',
     orbitalDays: 4332.59, orbitR: 248, size: 22 * PLANET_SIZE_SCALE,
     solarDayHours: 9.9250,
     img: 'images/jupiter.jpg',
@@ -285,7 +363,7 @@ const PLANETS = [
     highNote: { name: 'Bb3', freq: 233.08 },
   },
   {
-    name: 'Saturn', instrument: 'cello',
+    name: 'Saturn', instrument: 'violin',
     orbitalDays: 10759.22, orbitR: 305, size: 18 * PLANET_SIZE_SCALE, hasRing: true,
     solarDayHours: 10.6562,
     img: 'images/saturn.jpg',
@@ -295,18 +373,18 @@ const PLANETS = [
 ];
 
 // ── Instrument definitions ────────────────────────────────────────────────────
-// imag[n] = amplitude of nth harmonic (index 0 = DC, index 1 = fundamental)
+// sf: General MIDI soundfont name used by gleitz/midi-js-soundfonts
 const INSTRUMENTS = {
-  flute:    { label: 'Flute',       imag: [0, 1, 0.25, 0.03, 0.01],                              cutoff: 2200 },
-  violin:   { label: 'Violin',      imag: [0, 1, 0.5, 0.3, 0.2, 0.1, 0.07, 0.05, 0.03, 0.02],  cutoff: 2800 },
-  organ:    { label: 'Organ',       imag: [0, 1, 0.5, 0.33, 0.25, 0.1, 0.08, 0.05, 0.03],       cutoff: 1800 },
-  clarinet: { label: 'Clarinet',    imag: [0, 1, 0.05, 0.5, 0.02, 0.2, 0.01, 0.1, 0.0, 0.05],  cutoff: 1400 },
-  horn:     { label: 'French Horn', imag: [0, 1, 0.6, 0.5, 0.35, 0.25, 0.18, 0.12, 0.08, 0.05],cutoff: 1600 },
-  cello:    { label: 'Cello',       imag: [0, 1, 0.7, 0.45, 0.2, 0.1, 0.06, 0.03],              cutoff: 1200 },
-  oboe:     { label: 'Oboe',        imag: [0, 1, 0.7, 0.5, 0.3, 0.2, 0.1, 0.07, 0.05],          cutoff: 2000 },
-  theremin: { label: 'Theremin',    imag: [0, 1],                                                 cutoff: null, vibrato: true },
-  trumpet:  { label: 'Trumpet',     imag: [0, 1, 0.4, 0.6, 0.3, 0.4, 0.2, 0.1, 0.15, 0.05],    cutoff: 2400 },
-  lute:     { label: 'Lute',        imag: [0, 1, 0.6, 0.3, 0.1, 0.04, 0.01],                    cutoff: 1600 },
+  flute:    { label: 'Flute',       sf: 'flute' },
+  violin:   { label: 'Violin',      sf: 'violin' },
+  organ:    { label: 'Organ',       sf: 'church_organ' },
+  clarinet: { label: 'Clarinet',    sf: 'clarinet' },
+  horn:     { label: 'French Horn', sf: 'french_horn' },
+  cello:    { label: 'Cello',       sf: 'cello' },
+  oboe:     { label: 'Oboe',        sf: 'oboe' },
+  theremin: { label: 'Theremin',    sf: 'pad_2_warm' },
+  trumpet:  { label: 'Trumpet',     sf: 'trumpet' },
+  lute:     { label: 'Lute',        sf: 'acoustic_guitar_nylon' },
 };
 
 // ── Note lookup table ─────────────────────────────────────────────────────────
@@ -424,8 +502,8 @@ const planetNodes = PLANETS.map((p) => {
 });
 
 // ── Audio setup ───────────────────────────────────────────────────────────────
-const audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
-const TARGET_GAIN = 0.07;
+const audioCtx    = new (window.AudioContext || window.webkitAudioContext)();
+const TARGET_GAIN = 0.5;
 
 // Smooth gain ramp — exponential cannot reach 0, so clamp to 0.0001
 function rampGain(param, target, dur = 0.08) {
@@ -447,67 +525,152 @@ function makeReverbIR(ctx, duration = 2.5, decay = 2.0) {
 }
 
 // Shared reverb bus: planets → preReverbGain → [dry | convolver → wet] → destination
-const convolver      = audioCtx.createConvolver();
-convolver.buffer     = makeReverbIR(audioCtx);
-const preReverbGain  = audioCtx.createGain();  preReverbGain.gain.value = 0.8;
-const dryGain        = audioCtx.createGain();  dryGain.gain.value       = 0.6;
-const wetGain        = audioCtx.createGain();  wetGain.gain.value       = 0.4;
+const convolver     = audioCtx.createConvolver();
+convolver.buffer    = makeReverbIR(audioCtx);
+const preReverbGain = audioCtx.createGain();  preReverbGain.gain.value = 1.0;
+const dryGain       = audioCtx.createGain();  dryGain.gain.value       = 0.8;
+const wetGain       = audioCtx.createGain();  wetGain.gain.value       = 0.5;
 preReverbGain.connect(dryGain);
 preReverbGain.connect(convolver);
 convolver.connect(wetGain);
 dryGain.connect(audioCtx.destination);
 wetGain.connect(audioCtx.destination);
 
-// Apply an instrument profile to a planet node
-function applyInstrument(node, instName) {
-  const inst = INSTRUMENTS[instName];
-  const arr  = new Float32Array(inst.imag.length);
-  const wave = audioCtx.createPeriodicWave(arr, new Float32Array(inst.imag), { disableNormalization: false });
-  node.oscillator.setPeriodicWave(wave);
-  if (node.filter && inst.cutoff) node.filter.frequency.value = inst.cutoff;
-  if (node.lfoGain) node.lfoGain.gain.value = inst.vibrato ? 8 : 0;
-  node.currentInstrument = instName;
+// ── Soundfont sample loading ──────────────────────────────────────────────────
+const SOUNDFONT_BASE = 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM';
+
+// Three reference pitches that cover all planet note ranges
+const SAMPLE_NOTES = [
+  { name: 'A3', freq: 220.00 },
+  { name: 'A4', freq: 440.00 },
+  { name: 'A5', freq: 880.00 },
+];
+
+const sampleBuffers  = {};  // key: `${instName}_${noteName}` → AudioBuffer
+const sfLoadPromises = {};  // key: sfName → Promise (deduplicate concurrent loads)
+
+async function loadSoundfontScript(sfName) {
+  if (sfLoadPromises[sfName]) return sfLoadPromises[sfName];
+  sfLoadPromises[sfName] = new Promise((resolve, reject) => {
+    if (window.MIDI?.Soundfont?.[sfName]) { resolve(); return; }
+    if (!window.MIDI)          window.MIDI          = {};
+    if (!window.MIDI.Soundfont) window.MIDI.Soundfont = {};
+    const s = document.createElement('script');
+    s.src     = `${SOUNDFONT_BASE}/${sfName}-mp3.js`;
+    s.onload  = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return sfLoadPromises[sfName];
 }
 
-planetNodes.forEach((node) => {
-  const { p } = node;
+async function loadInstrumentSamples(instName) {
+  const sfName = INSTRUMENTS[instName].sf;
+  await loadSoundfontScript(sfName);
+  const sf = window.MIDI.Soundfont[sfName];
+  await Promise.all(SAMPLE_NOTES.map(async ({ name }) => {
+    const key = `${instName}_${name}`;
+    if (sampleBuffers[key]) return;
+    const dataURI = sf[name];
+    if (!dataURI) return;
+    const b64    = dataURI.split(',')[1];
+    const bin    = atob(b64);
+    const bytes  = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    try {
+      sampleBuffers[key] = await audioCtx.decodeAudioData(bytes.buffer.slice(0));
+    } catch (e) { console.warn('decode failed:', key, e); }
+  }));
+}
 
-  const osc  = audioCtx.createOscillator();
+function getBestSample(instName, freq) {
+  let best = null, bestDiff = Infinity;
+  for (const { name, freq: ref } of SAMPLE_NOTES) {
+    const buf = sampleBuffers[`${instName}_${name}`];
+    if (!buf) continue;
+    const diff = Math.abs(Math.log2(freq / ref));
+    if (diff < bestDiff) { bestDiff = diff; best = { buffer: buf, refFreq: ref }; }
+  }
+  return best;
+}
+
+// ── Per-planet voice management ───────────────────────────────────────────────
+function playVoice(node) {
+  const sample = getBestSample(node.currentInstrument, node.currentFreq);
+  if (!sample) return;
+
+  const src = audioCtx.createBufferSource();
+  const vg  = audioCtx.createGain();
+  src.buffer             = sample.buffer;
+  src.playbackRate.value = node.currentFreq / sample.refFreq;
+  src.connect(vg);
+  vg.connect(node.gainNode);
+
+  // Fade in new voice; fade out and disconnect old one
+  vg.gain.setValueAtTime(0, audioCtx.currentTime);
+  vg.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.15);
+  if (node.activeVoice) {
+    const { src: os, gain: og } = node.activeVoice;
+    og.gain.cancelScheduledValues(audioCtx.currentTime);
+    og.gain.setValueAtTime(og.gain.value, audioCtx.currentTime);
+    og.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+    setTimeout(() => { try { os.stop(); } catch(_) {} og.disconnect(); }, 250);
+  }
+  node.activeVoice = { src, gain: vg, refFreq: sample.refFreq };
+
+  src.addEventListener('ended', () => {
+    if (node.activeVoice?.src === src) { node.activeVoice = null; playVoice(node); }
+    vg.disconnect();
+  });
+  src.start();
+}
+
+async function applyInstrument(node, instName) {
+  node.currentInstrument = instName;
+  await loadInstrumentSamples(instName);
+  playVoice(node);
+}
+
+// ── Init per-planet audio nodes ───────────────────────────────────────────────
+planetNodes.forEach((node) => {
   const gain = audioCtx.createGain();
   gain.gain.value = TARGET_GAIN;
-
-  // Low-pass filter per planet (cutoff set by instrument)
-  const filter = audioCtx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = 1800;
-  filter.Q.value = 0.7;
-
-  // LFO for vibrato (active for theremin and other vibrato instruments)
-  const lfo     = audioCtx.createOscillator();
-  const lfoGain = audioCtx.createGain();
-  lfo.frequency.value = 4.5;
-  lfoGain.gain.value  = 0;
-  lfo.connect(lfoGain);
-  lfoGain.connect(osc.detune);
-  lfo.start();
-
-  osc.frequency.value = p.lowNote.freq;
-  osc.connect(gain);
-  gain.connect(filter);
-  filter.connect(preReverbGain);
-  osc.start();
-
-  node.oscillator = osc;
-  node.gainNode   = gain;
-  node.filter     = filter;
-  node.lfo        = lfo;
-  node.lfoGain    = lfoGain;
-
-  applyInstrument(node, p.instrument);
+  gain.connect(preReverbGain);
+  node.gainNode          = gain;
+  node.activeVoice       = null;
+  node.currentFreq       = node.p.lowNote.freq;
+  node.currentInstrument = node.p.instrument;
 });
 
-document.addEventListener('click', () => {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+// ── Boot: load default instruments then start voices ─────────────────────────
+let audioUnlocked = false;
+let samplesReady  = false;
+
+const titleEl = document.querySelector('.cp-title');
+titleEl.textContent = 'Loading…';
+
+(async () => {
+  const defaults = [...new Set(PLANETS.map(p => p.instrument))];
+  await Promise.all(defaults.map(loadInstrumentSamples));
+  samplesReady = true;
+  titleEl.textContent = "Kepler's Spheres";
+  maybeStart();
+})();
+
+function maybeStart() {
+  if (!audioUnlocked || !samplesReady) return;
+  planetNodes.forEach(node => { if (!node.activeVoice) playVoice(node); });
+}
+
+document.getElementById('start-btn').addEventListener('click', async () => {
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  document.getElementById('start-overlay').classList.add('hidden');
+  if (!audioUnlocked) { audioUnlocked = true; maybeStart(); }
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  virtualElapsed = 0;
+  lastFrameTime  = performance.now();
 });
 
 // ── Animation loop ────────────────────────────────────────────────────────────
@@ -544,7 +707,11 @@ function frame(now) {
     // Update pitch: t=0 at top (aphelion-like), t=1 at bottom; sine maps orbit to [0,1]
     const t    = (Math.sin(angle) + 1) / 2;
     const freq = p.lowNote.freq + (p.highNote.freq - p.lowNote.freq) * t;
-    node.oscillator.frequency.linearRampToValueAtTime(freq, audioCtx.currentTime + 0.05);
+    node.currentFreq = freq;
+    if (node.activeVoice) {
+      node.activeVoice.src.playbackRate.linearRampToValueAtTime(
+        freq / node.activeVoice.refFreq, audioCtx.currentTime + 0.05);
+    }
 
     const noteName = nearestNote(freq);
     if (noteLabel.textContent !== noteName) noteLabel.textContent = noteName;
