@@ -18,10 +18,15 @@
       justify-content: center;
     }
 
-    #stars {
+    #bg {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 100vh;
+      width: auto;
       pointer-events: none;
+      z-index: -1;
     }
 
     #solar-system {
@@ -285,7 +290,7 @@
   </div>
 </div>
 
-<canvas id="stars"></canvas>
+<img id="bg" src="images/background.jpg" alt="">
 
 <div id="solar-system">
   <div id="sun"></div>
@@ -320,7 +325,7 @@
   <label class="cp-row">
     <span>Speed</span>
     <span class="cp-slider-label">slow</span>
-    <input type="range" id="speed-slider" min="1" max="10" value="5" step="1">
+    <input type="range" id="speed-slider" min="1" max="50" value="5" step="1">
     <span class="cp-slider-label">fast</span>
   </label>
 </div>
@@ -425,27 +430,6 @@ const MERCURY_MS      = 30_000;
 const MS_PER_ORBD     = MERCURY_MS / PLANETS[0].orbitalDays;
 let   speedMultiplier = 5;
 
-// ── Stars ────────────────────────────────────────────────────────────────────
-const canvas = document.getElementById('stars');
-const ctx    = canvas.getContext('2d');
-
-function drawStars() {
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i < 240; i++) {
-    const x = Math.random() * canvas.width;
-    const y = Math.random() * canvas.height;
-    const r = Math.random() * 1.1 + 0.2;
-    const a = Math.random() * 0.65 + 0.2;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,255,255,${a})`;
-    ctx.fill();
-  }
-}
-drawStars();
-
 // ── Responsive scale ─────────────────────────────────────────────────────────
 const sys = document.getElementById('solar-system');
 
@@ -454,7 +438,7 @@ function resize() {
   sys.style.transform = `scale(${Math.min(1, scale)})`;
 }
 resize();
-window.addEventListener('resize', () => { resize(); drawStars(); });
+window.addEventListener('resize', () => { resize(); });
 
 // ── Build DOM ─────────────────────────────────────────────────────────────────
 const orbitRings = PLANETS.map(p => {
