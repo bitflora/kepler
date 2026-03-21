@@ -745,6 +745,7 @@ planetNodes.forEach((node) => {
   cb.checked = true;
   cb.addEventListener('change', () => {
     rampGain(node.gainNode.gain, cb.checked ? TARGET_GAIN : 0.0001, cb.checked ? 0.08 : 0.05);
+    node.planet.style.filter = cb.checked ? '' : 'grayscale(1) brightness(0.45)';
   });
 
   const span = document.createElement('span');
@@ -776,6 +777,7 @@ document.getElementById('all-mute').addEventListener('change', function () {
   planetNodes.forEach((node) => {
     node.muteCheckbox.checked = this.checked;
     rampGain(node.gainNode.gain, this.checked ? TARGET_GAIN : 0.0001, this.checked ? 0.08 : 0.05);
+    node.planet.style.filter = this.checked ? '' : 'grayscale(1) brightness(0.45)';
   });
 });
 
