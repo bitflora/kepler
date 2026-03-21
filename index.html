@@ -218,6 +218,29 @@
       background: rgba(255,255,255,0.12);
     }
 
+    /* ── Kepler Quote Pane ─────────────────────────────────────────────────── */
+    #kepler-quote {
+      position: fixed;
+      top: 22px;
+      left: 22px;
+      z-index: 900;
+      background: rgba(6, 11, 26, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 13px;
+      padding: 15px 19px;
+      color: #bccde8;
+      font-size: 12px;
+      line-height: 1.65;
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+      max-width: 300px;
+    }
+
+    #kepler-quote p {
+      font-style: italic;
+      opacity: 0.85;
+    }
+
     /* ── Start Popup ───────────────────────────────────────────────────────── */
     #start-overlay {
       position: fixed;
@@ -299,6 +322,31 @@
     <p>Music of the planets, as described in<br><em>Harmonices Mundi</em> (1619)</p>
     <button id="start-btn">Begin</button>
   </div>
+</div>
+
+<div id="kepler-quote">
+  <p>Accordingly, perfect consonances are found: between the converging
+movements of Saturn and Jupiter, the octave; between the converging
+movements of Jupiter and Mars, the octave and minor third
+approximately; between the converging movements of Mars and the
+Earth, the fifth; between their perihelial, the minor sixth; between the
+extreme converging movements of Venus and Mercury, the major sixth;
+between the diverging or even between the perihelial, the double octave:
+whence without any loss to an astronomy which has been built, most
+subtly of all, upon Brahe's observations, it seems that the residual very
+slight discrepancy can be discounted, especially in the movements of
+Venus and Mercury.</p>
+  <br>
+  <p>And so the ratio of plain-song or monody,
+which we call choral music and which alone was known to the ancients,
+to polyphony—called "figured song,"; the invention of the latest
+generations—is the same as the ratio of the consonances which the single
+planets designate to the consonances of the planets taken together. And
+so, further on, in Chapters 5 and 6, the single planets will be compared to
+the choral music of the ancients and its properties will be exhibited in
+the planetary movements.</p>
+  <br/>
+  <p><strong>— Johannes Kepler, <em>Harmonices Mundi</em> (1619)</strong></p>
 </div>
 
 <img id="bg" src="images/background.jpg" alt="">
