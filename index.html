@@ -104,6 +104,9 @@
       position: absolute;
       top: 0;
       left: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       color: rgba(255, 255, 255, 0.82);
       font-size: 11px;
       font-weight: 600;
@@ -112,6 +115,14 @@
       pointer-events: none;
       z-index: 6;
       text-shadow: 0 0 6px rgba(0,0,0,0.9);
+    }
+
+    .instrument-icon {
+      font-size: 14px;
+      line-height: 1;
+      margin-bottom: 2px;
+      text-shadow: none;
+      filter: drop-shadow(0 0 4px rgba(0,0,0,0.9));
     }
 
     /* ── Control Panel ────────────────────────────────────────────────────── */
@@ -301,18 +312,7 @@
   <label class="cp-row" id="all-row">
     <input type="checkbox" id="all-mute" checked>
     <span>All planets</span>
-    <select class="cp-wave-select" id="all-wave">
-      <option value="flute">Flute</option>
-      <option value="violin" selected>Violin</option>
-      <option value="organ">Organ</option>
-      <option value="clarinet">Clarinet</option>
-      <option value="horn">French Horn</option>
-      <option value="cello">Cello</option>
-      <option value="oboe">Oboe</option>
-      <option value="theremin">Theremin</option>
-      <option value="trumpet">Trumpet</option>
-      <option value="lute">Lute</option>
-    </select>
+    <select class="cp-wave-select" id="all-wave"></select>
   </label>
   <hr class="cp-divider">
   <div id="planet-mutes"></div>
@@ -335,7 +335,7 @@ const PLANET_SIZE_SCALE = 2.5;
 
 const PLANETS = [
   {
-    name: 'Mercury', instrument: 'violin',
+    name: 'Mercury',
     orbitalDays: 87.97, orbitR: 72, size: 6 * PLANET_SIZE_SCALE,
     solarDayHours: 4222.6,
     img: 'images/mercury.jpg',
@@ -343,7 +343,7 @@ const PLANETS = [
     highNote: { name: 'C6',  freq: 1046.50 },
   },
   {
-    name: 'Venus', instrument: 'violin',
+    name: 'Venus',
     orbitalDays: 224.70, orbitR: 110, size: 10 * PLANET_SIZE_SCALE,
     solarDayHours: 2802.0,
     img: 'images/venus.jpg',
@@ -351,7 +351,7 @@ const PLANETS = [
     highNote: { name: 'E4',  freq: 329.63 },
   },
   {
-    name: 'Earth', instrument: 'violin',
+    name: 'Earth',
     orbitalDays: 365.25, orbitR: 150, size: 10 * PLANET_SIZE_SCALE,
     solarDayHours: 24.0,
     img: 'images/earth.jpg',
@@ -359,7 +359,7 @@ const PLANETS = [
     highNote: { name: 'F4',  freq: 349.23 },
   },
   {
-    name: 'Mars', instrument: 'violin',
+    name: 'Mars',
     orbitalDays: 686.97, orbitR: 192, size: 8 * PLANET_SIZE_SCALE,
     solarDayHours: 24.6598,
     img: 'images/mars.jpg',
@@ -367,7 +367,7 @@ const PLANETS = [
     highNote: { name: 'C4',  freq: 261.63 },
   },
   {
-    name: 'Jupiter', instrument: 'violin',
+    name: 'Jupiter',
     orbitalDays: 4332.59, orbitR: 248, size: 22 * PLANET_SIZE_SCALE,
     solarDayHours: 9.9250,
     img: 'images/jupiter.jpg',
@@ -375,7 +375,7 @@ const PLANETS = [
     highNote: { name: 'Bb3', freq: 233.08 },
   },
   {
-    name: 'Saturn', instrument: 'violin',
+    name: 'Saturn',
     orbitalDays: 10759.22, orbitR: 305, size: 18 * PLANET_SIZE_SCALE, hasRing: true,
     solarDayHours: 10.6562,
     img: 'images/saturn.jpg',
@@ -387,17 +387,46 @@ const PLANETS = [
 // ── Instrument definitions ────────────────────────────────────────────────────
 // sf: General MIDI soundfont name used by gleitz/midi-js-soundfonts
 const INSTRUMENTS = {
-  flute:    { label: 'Flute',       sf: 'flute' },
-  violin:   { label: 'Violin',      sf: 'violin' },
-  organ:    { label: 'Organ',       sf: 'church_organ' },
-  clarinet: { label: 'Clarinet',    sf: 'clarinet' },
-  horn:     { label: 'French Horn', sf: 'french_horn' },
-  cello:    { label: 'Cello',       sf: 'cello' },
-  oboe:     { label: 'Oboe',        sf: 'oboe' },
-  theremin: { label: 'Theremin',    sf: 'pad_2_warm' },
-  trumpet:  { label: 'Trumpet',     sf: 'trumpet' },
-  lute:     { label: 'Lute',        sf: 'acoustic_guitar_nylon' },
+  flute:       { label: 'Flute',           sf: 'flute',                  emoji: '🪈' },
+  violin:      { label: 'Violin',          sf: 'violin',                 emoji: '🎻' },
+  organ:       { label: 'Organ',           sf: 'church_organ',           emoji: '🎹' },
+  clarinet:    { label: 'Clarinet',        sf: 'clarinet',               emoji: '🎵' },
+  horn:        { label: 'French Horn',     sf: 'french_horn',            emoji: '📯' },
+  cello:       { label: 'Cello',           sf: 'cello',                  emoji: '🎻' },
+  oboe:        { label: 'Oboe',            sf: 'oboe',                   emoji: '🎵' },
+  theremin:    { label: 'Theremin',        sf: 'pad_2_warm',             emoji: '🎛️' },
+  trumpet:     { label: 'Trumpet',         sf: 'trumpet',                emoji: '🎺' },
+  lute:        { label: 'Lute',            sf: 'acoustic_guitar_nylon',  emoji: '🪕' },
+  harpsichord: { label: 'Harpsichord',     sf: 'harpsichord',            emoji: '🎹' },
+  choir:       { label: 'Choir',           sf: 'choir_aahs',             emoji: '🎤' },
+  recorder:    { label: 'Recorder',        sf: 'recorder',               emoji: '🪈' },
+  bassoon:     { label: 'Bassoon',         sf: 'bassoon',                emoji: '🎵' },
+  viola:       { label: 'Viola',           sf: 'viola',                  emoji: '🎻' },
+  strings:     { label: 'String Ensemble', sf: 'string_ensemble_1',      emoji: '🎻' },
+  panflute:    { label: 'Pan Flute',       sf: 'pan_flute',              emoji: '🪈' },
+  shakuhachi:  { label: 'Shakuhachi',      sf: 'shakuhachi',             emoji: '🎋' },
+  trombone:    { label: 'Trombone',        sf: 'trombone',               emoji: '🎺' },
+  synthpad:    { label: 'Synth Pad',       sf: 'pad_3_polysynth',        emoji: '🎹' },
+  eguitar:     { label: 'Electric Guitar', sf: 'electric_guitar_clean',  emoji: '🎸' },
 };
+
+// Assign a random (unique where possible) instrument to each planet on load
+{
+  const keys = Object.keys(INSTRUMENTS);
+  const shuffled = keys.slice().sort(() => Math.random() - 0.5);
+  PLANETS.forEach((p, i) => { p.instrument = shuffled[i % shuffled.length]; });
+}
+
+// Populate the "All planets" dropdown from INSTRUMENTS
+{
+  const allWave = document.getElementById('all-wave');
+  Object.entries(INSTRUMENTS).forEach(([val, def]) => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = def.label;
+    allWave.appendChild(opt);
+  });
+}
 
 // ── Note lookup table ─────────────────────────────────────────────────────────
 const NOTE_TABLE = [
@@ -477,10 +506,19 @@ const planetNodes = PLANETS.map((p) => {
   }
   anchor.appendChild(planet);
 
-  const noteLabel = document.createElement('span');
+  const noteLabel = document.createElement('div');
   noteLabel.className = 'note-label';
   noteLabel.style.transform = `translate(-50%, calc(-100% - ${p.size / 2 + 8}px))`;
-  noteLabel.textContent = p.lowNote.name;
+
+  const iconEl = document.createElement('span');
+  iconEl.className = 'instrument-icon';
+  iconEl.textContent = INSTRUMENTS[p.instrument].emoji;
+
+  const noteNameEl = document.createElement('span');
+  noteNameEl.textContent = p.lowNote.name;
+
+  noteLabel.appendChild(iconEl);
+  noteLabel.appendChild(noteNameEl);
   anchor.appendChild(noteLabel);
 
   sys.appendChild(anchor);
@@ -489,7 +527,7 @@ const planetNodes = PLANETS.map((p) => {
   const spinDurMs    = Math.max(3000, Math.min(60000, p.solarDayHours / 24 * 8000));
   const spinPxPerMs  = p.img ? p.size / spinDurMs : 0;
 
-  return { anchor, planet, noteLabel, initialAngle, p, spinPxPerMs, rotOffset: 0 };
+  return { anchor, planet, noteLabel, noteNameEl, iconEl, initialAngle, p, spinPxPerMs, rotOffset: 0 };
 });
 
 // ── Audio setup ───────────────────────────────────────────────────────────────
@@ -618,6 +656,7 @@ function playVoice(node) {
 
 async function applyInstrument(node, instName) {
   node.currentInstrument = instName;
+  if (node.iconEl) node.iconEl.textContent = INSTRUMENTS[instName].emoji;
   await loadInstrumentSamples(instName);
   playVoice(node);
 }
@@ -725,7 +764,7 @@ function frame(now) {
     }
 
     const noteName = nearestNote(freq);
-    if (noteLabel.textContent !== noteName) noteLabel.textContent = noteName;
+    if (node.noteNameEl.textContent !== noteName) node.noteNameEl.textContent = noteName;
   });
 
   requestAnimationFrame(frame);
