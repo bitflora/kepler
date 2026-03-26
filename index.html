@@ -363,6 +363,10 @@ the planetary movements.</p>
     <select class="cp-wave-select" id="all-wave"></select>
   </label>
   <hr class="cp-divider">
+  <label class="cp-row" id="all-discrete-row">
+    <input type="checkbox" id="all-discrete">
+    <span>Discrete notes</span>
+  </label>
   <div id="planet-mutes"></div>
   <hr class="cp-divider">
   <div class="cp-btn-row">
@@ -389,6 +393,15 @@ const PLANETS = [
     img: 'images/mercury.jpg',
     lowNote:  { name: 'A4',  freq: 440.00 },
     highNote: { name: 'C6',  freq: 1046.50 },
+    discreteNotes: [
+      {name:'A4',freq:440.00},{name:'B4',freq:493.88},{name:'C5',freq:523.25},
+      {name:'D5',freq:587.33},{name:'E5',freq:659.26},{name:'F5',freq:698.46},
+      {name:'G5',freq:783.99},{name:'A5',freq:880.00},{name:'B5',freq:987.77},
+      {name:'C6',freq:1046.50},{name:'B5',freq:987.77},{name:'A5',freq:880.00},
+      {name:'G5',freq:783.99},{name:'F5',freq:698.46},{name:'E5',freq:659.26},
+      {name:'D5',freq:587.33},{name:'C5',freq:523.25},{name:'B4',freq:493.88},
+      {name:'A4',freq:440.00},
+    ],
   },
   {
     name: 'Venus',
@@ -397,6 +410,9 @@ const PLANETS = [
     img: 'images/venus.jpg',
     lowNote:  { name: 'E4',  freq: 329.63 },
     highNote: { name: 'E4',  freq: 329.63 },
+    discreteNotes: [
+      {name:'E4',freq:329.63},{name:'E4',freq:329.63},
+    ],
   },
   {
     name: 'Earth',
@@ -405,6 +421,9 @@ const PLANETS = [
     img: 'images/earth.jpg',
     lowNote:  { name: 'E4',  freq: 329.63 },
     highNote: { name: 'F4',  freq: 349.23 },
+    discreteNotes: [
+      {name:'E4',freq:329.63},{name:'F4',freq:349.23},{name:'E4',freq:329.63},
+    ],
   },
   {
     name: 'Mars',
@@ -413,6 +432,11 @@ const PLANETS = [
     img: 'images/mars.jpg',
     lowNote:  { name: 'F3',  freq: 174.61 },
     highNote: { name: 'C4',  freq: 261.63 },
+    discreteNotes: [
+      {name:'F3',freq:174.61},{name:'G3',freq:196.00},{name:'A3',freq:220.00},
+      {name:'Bb3',freq:233.08},{name:'C4',freq:261.63},{name:'Bb3',freq:233.08},
+      {name:'A3',freq:220.00},{name:'G3',freq:196.00},{name:'F3',freq:174.61},
+    ],
   },
   {
     name: 'Jupiter',
@@ -421,6 +445,10 @@ const PLANETS = [
     img: 'images/jupiter.jpg',
     lowNote:  { name: 'G3',  freq: 196.00 },
     highNote: { name: 'Bb3', freq: 233.08 },
+    discreteNotes: [
+      {name:'G3',freq:196.00},{name:'A3',freq:220.00},{name:'Bb3',freq:233.08},
+      {name:'A3',freq:220.00},{name:'G3',freq:196.00},
+    ],
   },
   {
     name: 'Saturn',
@@ -429,6 +457,10 @@ const PLANETS = [
     img: 'images/saturn.jpg',
     lowNote:  { name: 'G3',  freq: 196.00 },
     highNote: { name: 'B3',  freq: 246.94 },
+    discreteNotes: [
+      {name:'G3',freq:196.00},{name:'A3',freq:220.00},{name:'B3',freq:246.94},
+      {name:'A3',freq:220.00},{name:'G3',freq:196.00},
+    ],
   },
 ];
 
@@ -718,6 +750,8 @@ planetNodes.forEach((node) => {
   node.activeVoice       = null;
   node.currentFreq       = node.p.lowNote.freq;
   node.currentInstrument = node.p.instrument;
+  node.discreteMode      = false;
+  node.lastNoteIndex     = -1;
 });
 
 // ── Boot: load default instruments then start voices ─────────────────────────
@@ -802,17 +836,36 @@ function frame(now) {
       planet.style.backgroundPosition = `${-node.rotOffset}px 50%`;
     }
 
-    // Update pitch: t=0 at top (aphelion-like), t=1 at bottom; sine maps orbit to [0,1]
-    const t    = (Math.sin(angle) + 1) / 2;
-    const freq = p.lowNote.freq + (p.highNote.freq - p.lowNote.freq) * t;
-    node.currentFreq = freq;
-    if (node.activeVoice) {
-      node.activeVoice.src.playbackRate.linearRampToValueAtTime(
-        freq / node.activeVoice.refFreq, audioCtx.currentTime + 0.05);
+    // Update pitch
+    const t = (Math.sin(angle) + 1) / 2;
+    if (!node.discreteMode) {
+      // Continuous glissando
+      const freq = p.lowNote.freq + (p.highNote.freq - p.lowNote.freq) * t;
+      node.currentFreq = freq;
+      if (node.activeVoice) {
+        node.activeVoice.src.playbackRate.linearRampToValueAtTime(
+          freq / node.activeVoice.refFreq, audioCtx.currentTime + 0.05);
+      }
+      const noteName = nearestNote(freq);
+      if (node.noteNameEl.textContent !== noteName) node.noteNameEl.textContent = noteName;
+    } else {
+      // Discrete notes: divide orbit into equal angular segments, boundaries at visual top/bottom
+      const notes = p.discreteNotes;
+      const shiftedAngle = angle + Math.PI / 2;
+      const phase = ((shiftedAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / (2 * Math.PI);
+      const idx = Math.floor(phase * notes.length) % notes.length;
+      if (idx !== node.lastNoteIndex) {
+        node.lastNoteIndex = idx;
+        const freq = notes[idx].freq;
+        node.currentFreq = freq;
+        if (node.activeVoice) {
+          node.activeVoice.src.playbackRate.cancelScheduledValues(audioCtx.currentTime);
+          node.activeVoice.src.playbackRate.setValueAtTime(
+            freq / node.activeVoice.refFreq, audioCtx.currentTime);
+        }
+        node.noteNameEl.textContent = notes[idx].name;
+      }
     }
-
-    const noteName = nearestNote(freq);
-    if (node.noteNameEl.textContent !== noteName) node.noteNameEl.textContent = noteName;
   });
 
   requestAnimationFrame(frame);
@@ -826,6 +879,15 @@ const mutesContainer = document.getElementById('planet-mutes');
 planetNodes.forEach((node) => {
   const label = document.createElement('label');
   label.className = 'cp-row';
+
+  const discreteCb = document.createElement('input');
+  discreteCb.type    = 'checkbox';
+  discreteCb.checked = false;
+  discreteCb.title   = 'Discrete notes';
+  discreteCb.addEventListener('change', () => {
+    node.discreteMode = discreteCb.checked;
+    if (!discreteCb.checked) node.lastNoteIndex = -1;
+  });
 
   const cb = document.createElement('input');
   cb.type    = 'checkbox';
@@ -851,9 +913,11 @@ planetNodes.forEach((node) => {
     applyInstrument(node, sel.value);
   });
 
-  node.muteCheckbox = cb;
-  node.waveSelect   = sel;
+  node.discreteCheckbox = discreteCb;
+  node.muteCheckbox     = cb;
+  node.waveSelect       = sel;
 
+  label.appendChild(discreteCb);
   label.appendChild(cb);
   label.appendChild(span);
   label.appendChild(sel);
@@ -872,6 +936,14 @@ document.getElementById('all-wave').addEventListener('change', function () {
   planetNodes.forEach((node) => {
     applyInstrument(node, this.value);
     node.waveSelect.value = this.value;
+  });
+});
+
+document.getElementById('all-discrete').addEventListener('change', function () {
+  planetNodes.forEach((node) => {
+    node.discreteMode = this.checked;
+    node.discreteCheckbox.checked = this.checked;
+    if (!this.checked) node.lastNoteIndex = -1;
   });
 });
 
