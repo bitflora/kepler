@@ -363,9 +363,19 @@ the planetary movements.</p>
     <select class="cp-wave-select" id="all-wave"></select>
   </label>
   <hr class="cp-divider">
-  <label class="cp-row" id="all-discrete-row">
-    <input type="checkbox" id="all-discrete">
-    <span>Discrete notes</span>
+  <label class="cp-row" id="all-mode-row">
+    <span>Mode</span>
+    <select id="all-mode">
+      <option value="glissando">Glissando</option>
+      <option value="continuous">Continuous</option>
+      <option value="timed">Timed</option>
+    </select>
+  </label>
+  <label class="cp-row" id="note-duration-row" style="display:none">
+    <span>Note</span>
+    <span class="cp-slider-label">short</span>
+    <input type="range" id="note-duration-slider" min="100" max="4000" value="1000" step="100">
+    <span class="cp-slider-label">long</span>
   </label>
   <div id="planet-mutes"></div>
   <hr class="cp-divider">
@@ -411,6 +421,7 @@ const PLANETS = [
     lowNote:  { name: 'E4',  freq: 329.63 },
     highNote: { name: 'E4',  freq: 329.63 },
     discreteNotes: [
+      {name:'E4',freq:329.63},{name:'E4',freq:329.63},
       {name:'E4',freq:329.63},{name:'E4',freq:329.63},
     ],
   },
@@ -750,8 +761,10 @@ planetNodes.forEach((node) => {
   node.activeVoice       = null;
   node.currentFreq       = node.p.lowNote.freq;
   node.currentInstrument = node.p.instrument;
-  node.discreteMode      = false;
   node.lastNoteIndex     = -1;
+  node.lastNoteTime      = 0;
+  node.playbackMode      = 'glissando';
+  node.noteDurationMs    = 1000;
 });
 
 // ── Boot: load default instruments then start voices ─────────────────────────
@@ -838,8 +851,8 @@ function frame(now) {
 
     // Update pitch
     const t = (Math.sin(angle) + 1) / 2;
-    if (!node.discreteMode) {
-      // Continuous glissando
+    if (node.playbackMode === 'glissando') {
+      // Smooth pitch glide based on orbital position
       const freq = p.lowNote.freq + (p.highNote.freq - p.lowNote.freq) * t;
       node.currentFreq = freq;
       if (node.activeVoice) {
@@ -848,13 +861,31 @@ function frame(now) {
       }
       const noteName = nearestNote(freq);
       if (node.noteNameEl.textContent !== noteName) node.noteNameEl.textContent = noteName;
-    } else {
-      // Discrete notes: divide orbit into equal angular segments, boundaries at visual top/bottom
+    } else if (node.playbackMode === 'continuous') {
+      // Discrete notes: divide orbit into equal angular segments
       const notes = p.discreteNotes;
       const shiftedAngle = angle + Math.PI / 2;
       const phase = ((shiftedAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / (2 * Math.PI);
       const idx = Math.floor(phase * notes.length) % notes.length;
       if (idx !== node.lastNoteIndex) {
+        node.lastNoteIndex = idx;
+        const freq = notes[idx].freq;
+        node.currentFreq = freq;
+        if (node.activeVoice) {
+          node.activeVoice.src.playbackRate.cancelScheduledValues(audioCtx.currentTime);
+          node.activeVoice.src.playbackRate.setValueAtTime(
+            freq / node.activeVoice.refFreq, audioCtx.currentTime);
+        }
+        node.noteNameEl.textContent = notes[idx].name;
+      }
+    } else if (node.playbackMode === 'timed') {
+      // Notes advance on a real-time clock
+      const notes = p.discreteNotes;
+      const now = audioCtx.currentTime * 1000;
+      if (node.lastNoteTime === 0) node.lastNoteTime = now;
+      if (now - node.lastNoteTime >= node.noteDurationMs) {
+        node.lastNoteTime = now;
+        const idx = (node.lastNoteIndex + 1) % notes.length;
         node.lastNoteIndex = idx;
         const freq = notes[idx].freq;
         node.currentFreq = freq;
@@ -880,15 +911,6 @@ planetNodes.forEach((node) => {
   const label = document.createElement('label');
   label.className = 'cp-row';
 
-  const discreteCb = document.createElement('input');
-  discreteCb.type    = 'checkbox';
-  discreteCb.checked = false;
-  discreteCb.title   = 'Discrete notes';
-  discreteCb.addEventListener('change', () => {
-    node.discreteMode = discreteCb.checked;
-    if (!discreteCb.checked) node.lastNoteIndex = -1;
-  });
-
   const cb = document.createElement('input');
   cb.type    = 'checkbox';
   cb.checked = true;
@@ -913,15 +935,58 @@ planetNodes.forEach((node) => {
     applyInstrument(node, sel.value);
   });
 
-  node.discreteCheckbox = discreteCb;
+  const modeSel = document.createElement('select');
+  modeSel.className = 'cp-wave-select';
+  ['glissando', 'continuous', 'timed'].forEach((val) => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = val.charAt(0).toUpperCase() + val.slice(1);
+    modeSel.appendChild(opt);
+  });
+  modeSel.value = 'glissando';
+
+  const durRow = document.createElement('label');
+  durRow.className = 'cp-row';
+  durRow.style.display = 'none';
+  const durShort = document.createElement('span');
+  durShort.className = 'cp-slider-label';
+  durShort.textContent = 'short';
+  const durLong = document.createElement('span');
+  durLong.className = 'cp-slider-label';
+  durLong.textContent = 'long';
+  const durSlider = document.createElement('input');
+  durSlider.type = 'range';
+  durSlider.min = '100';
+  durSlider.max = '4000';
+  durSlider.value = '1000';
+  durSlider.step = '100';
+  durRow.appendChild(durShort);
+  durRow.appendChild(durSlider);
+  durRow.appendChild(durLong);
+
+  modeSel.addEventListener('change', () => {
+    node.playbackMode = modeSel.value;
+    durRow.style.display = modeSel.value === 'timed' ? '' : 'none';
+    node.lastNoteIndex = -1;
+    if (modeSel.value === 'timed') node.lastNoteTime = 0;
+  });
+
+  durSlider.addEventListener('input', () => {
+    node.noteDurationMs = parseInt(durSlider.value);
+  });
+
   node.muteCheckbox     = cb;
   node.waveSelect       = sel;
+  node.modeSelect       = modeSel;
+  node.noteDurRow       = durRow;
+  node.noteDurSlider    = durSlider;
 
-  label.appendChild(discreteCb);
   label.appendChild(cb);
   label.appendChild(span);
   label.appendChild(sel);
+  label.appendChild(modeSel);
   mutesContainer.appendChild(label);
+  mutesContainer.appendChild(durRow);
 });
 
 document.getElementById('all-mute').addEventListener('change', function () {
@@ -939,11 +1004,23 @@ document.getElementById('all-wave').addEventListener('change', function () {
   });
 });
 
-document.getElementById('all-discrete').addEventListener('change', function () {
+document.getElementById('all-mode').addEventListener('change', function () {
+  document.getElementById('note-duration-row').style.display =
+    this.value === 'timed' ? '' : 'none';
   planetNodes.forEach((node) => {
-    node.discreteMode = this.checked;
-    node.discreteCheckbox.checked = this.checked;
-    if (!this.checked) node.lastNoteIndex = -1;
+    node.playbackMode = this.value;
+    node.modeSelect.value = this.value;
+    node.noteDurRow.style.display = this.value === 'timed' ? '' : 'none';
+    node.lastNoteIndex = -1;
+    if (this.value === 'timed') node.lastNoteTime = 0;
+  });
+});
+
+document.getElementById('note-duration-slider').addEventListener('input', function () {
+  const ms = parseInt(this.value);
+  planetNodes.forEach((node) => {
+    node.noteDurationMs = ms;
+    node.noteDurSlider.value = this.value;
   });
 });
 
